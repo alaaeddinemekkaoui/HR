@@ -196,8 +196,9 @@ body {
 }
 
 .btn:not(.btn-primary):not(.btn-success):not(.btn-danger):not(.btn-secondary):not(.btn-outline-primary):not(.btn-outline-secondary):not(.btn-outline-danger):not(.btn-outline-success):hover {
-  background: var(--hover-bg);
-  color: var(--text-primary) !important;
+  background: var(--primary-blue);
+  border-color: var(--primary-blue);
+  color: #ffffff !important;
 }
 
 .btn-primary {
@@ -1107,6 +1108,24 @@ h1.h3 {
   .navbar-brand { font-size: 1rem; }
   main.container { padding: 1rem; margin-top: 1rem; }
   .btn { padding: 0.4rem 0.9rem; font-size: 0.85rem; }
+}
+
+/* Final modal overrides (ensure only the card has background; page stays dimmed) */
+.modal-backdrop.show {
+  background-color: #000;
+  opacity: 0.4;
+}
+
+.modal-content {
+  background: var(--bg-white) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.modal-header, .modal-footer {
+  background: var(--bg-white) !important;
 }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
