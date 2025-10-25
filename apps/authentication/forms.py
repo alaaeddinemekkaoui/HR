@@ -26,3 +26,27 @@ class UserRegistrationForm(UserCreationForm):
         if commit:
             user.save()
         return user
+
+
+class AccountSettingsForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'first_name', 'last_name')
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+    def clean_username(self):
+        username = self.cleaned_data['username']
+        if User.objects.filter(username=username).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError('This username is already taken.')
+        return username
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if email and User.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError('This email is already in use.')
+        return email

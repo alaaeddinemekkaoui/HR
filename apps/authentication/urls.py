@@ -5,6 +5,7 @@ app_name = 'authentication'
 
 urlpatterns = [
     path('profile/', views.ProfileView.as_view(), name='profile'),
+    path('account/', views.AccountSettingsView.as_view(), name='account'),
     path('register/', views.RegisterView.as_view(), name='register'),
     path('users/', views.UserListView.as_view(), name='users'),
 ]

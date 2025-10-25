@@ -3,7 +3,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import login
-from .forms import UserRegistrationForm
+from .forms import UserRegistrationForm, AccountSettingsForm
 from django.contrib.auth.models import User, Group
 
 
@@ -14,15 +14,55 @@ class ProfileView(LoginRequiredMixin, View):
         employee = getattr(user, 'employee_profile', None)
         history = []
         next_grade = []
+        time_in_grade = None
         if employee:
             history = list(employee.history.select_related('employee').all()[:10])
             next_grade = employee.next_grade_eligibility()
+            # Compute 'X years, Y months' in current grade
+            try:
+                start = employee.grade_start_date
+                if start:
+                    from datetime import date
+                    today = date.today()
+                    total_months = (today.year - start.year) * 12 + (today.month - start.month)
+                    if today.day < start.day:
+                        total_months -= 1
+                    total_months = max(0, total_months)
+                    years = total_months // 12
+                    months = total_months % 12
+                    parts = []
+                    if years > 0:
+                        parts.append(f"{years} year{'s' if years != 1 else ''}")
+                    parts.append(f"{months} month{'s' if months != 1 else ''}")
+                    time_in_grade = ", ".join(parts)
+            except Exception:
+                time_in_grade = None
+            # Compute supervisors M+1 and M+2
+            try:
+                m1 = None
+                m2 = None
+                from apps.employees.models.employee import Employee as Emp
+                # Determine chain based on where employee is attached
+                if employee.service_id:
+                    m1 = Emp.objects.filter(service_id=employee.service_id, position__position_type='chef_service').first()
+                    m2 = Emp.objects.filter(division_id=employee.division_id, position__position_type='chef_division').first() if employee.division_id else Emp.objects.filter(direction_id=employee.direction_id, position__position_type='chef_direction').first()
+                elif employee.division_id:
+                    m1 = Emp.objects.filter(division_id=employee.division_id, position__position_type='chef_division').first()
+                    m2 = Emp.objects.filter(direction_id=employee.direction_id, position__position_type='chef_direction').first()
+                elif employee.direction_id:
+                    m1 = Emp.objects.filter(direction_id=employee.direction_id, position__position_type='chef_direction').first()
+                    m2 = None
+                supervisors = {'m1': m1, 'm2': m2}
+            except Exception:
+                supervisors = {'m1': None, 'm2': None}
         return render(request, 'authentication/profile.html', {
             'user_obj': user,
             'groups': groups,
             'employee': employee,
             'history': history,
             'next_grade': next_grade,
+            'time_in_grade': time_in_grade,
+            'supervisors': supervisors if employee else {'m1': None, 'm2': None},
         })
 
 
@@ -60,3 +100,17 @@ class UserListView(LoginRequiredMixin, ITAdminOnlyMixin, View):
             'users': users,
             'groups': groups,
         })
+
+
+class AccountSettingsView(LoginRequiredMixin, View):
+    def get(self, request):
+        form = AccountSettingsForm(instance=request.user)
+        return render(request, 'authentication/account_settings.html', {'form': form})
+
+    def post(self, request):
+        form = AccountSettingsForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Account settings updated.')
+            return redirect('authentication:profile')
+        return render(request, 'authentication/account_settings.html', {'form': form})

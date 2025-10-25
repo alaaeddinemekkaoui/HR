@@ -5,6 +5,8 @@ from django.contrib import messages
 from django.utils import timezone
 from apps.employees.models import Employee
 from .models import LeaveType, LeaveRequest, EmployeeLeaveBalance
+from .utils import find_supervisors_for, approvals_scope_q_for_user
+from apps.notifications.models import Notification
 from .forms import LeaveTypeForm, LeaveRequestForm
 
 
@@ -74,23 +76,59 @@ class LeaveRequestCreateView(LoginRequiredMixin, View):
             req.employee = employee
             req.compute_days()
             req.save()
+            # Notify supervisors
+            supervisors = find_supervisors_for(employee)
+            for u in supervisors:
+                Notification.objects.create(
+                    recipient=u,
+                    actor=request.user,
+                    category='leave_request',
+                    title=f"Leave request from {employee.full_name}",
+                    message=f"{req.leave_type.name}: {req.start_date} → {req.end_date} ({req.days} days)",
+                    url='/leaves/approve/'
+                )
+            # Notify the requesting employee (confirmation)
+            if employee.user:
+                Notification.objects.create(
+                    recipient=employee.user,
+                    actor=request.user,
+                    category='leave_request',
+                    title='Leave request submitted',
+                    message=f"{req.leave_type.name}: {req.start_date} → {req.end_date} ({req.days} days)",
+                    url='/leaves/my/'
+                )
             messages.success(request, f'Request submitted for {req.days} day(s).')
             return redirect('leaves:my')
         return render(request, 'leaves/request_form.html', {'form': form})
 
 
-class LeaveApproveListView(LoginRequiredMixin, PermissionRequiredMixin, View):
-    permission_required = 'leaves.change_leaverequest'
+class LeaveApproveListView(LoginRequiredMixin, View):
     def get(self, request):
-        pending = LeaveRequest.objects.filter(status='pending').select_related('employee','leave_type')
+        scope_q = approvals_scope_q_for_user(request.user)
+        # scope_q empty Q() means full access; pk__in=[] means none
+        pending = (LeaveRequest.objects
+                   .filter(status='pending')
+                   .filter(scope_q)
+                   .select_related('employee','leave_type'))
         return render(request, 'leaves/approve_list.html', {'pending': pending})
 
 
-class LeaveApproveActionView(LoginRequiredMixin, PermissionRequiredMixin, View):
-    permission_required = 'leaves.change_leaverequest'
+class LeaveApproveActionView(LoginRequiredMixin, View):
     def post(self, request, pk):
         action = request.POST.get('action')
         req = get_object_or_404(LeaveRequest, pk=pk)
+        # Allow admins full access; otherwise ensure the request is within user's supervisory scope
+        from django.db.models import Q
+        scope_q = approvals_scope_q_for_user(request.user)
+        has_full_access = isinstance(scope_q, Q) and scope_q.children == []  # Q() => admins
+        in_scope = LeaveRequest.objects.filter(pk=req.pk).filter(scope_q).exists()
+        if not (has_full_access or in_scope):
+            messages.error(request, 'You are not allowed to take action on this request.')
+            return redirect('leaves:approve')
+        # Only pending requests can be actioned
+        if req.status != 'pending':
+            messages.error(request, 'Only pending requests can be approved or rejected.')
+            return redirect('leaves:approve')
         if action == 'approve':
             req.status = 'approved'
             req.approver = request.user
@@ -98,12 +136,42 @@ class LeaveApproveActionView(LoginRequiredMixin, PermissionRequiredMixin, View):
             req.save()
             # TODO: Update balances accordingly (accrual/carryover logic can be implemented in a scheduled job)
             messages.success(request, 'Leave approved.')
+            # Notify employee
+            if req.employee.user:
+                Notification.objects.create(
+                    recipient=req.employee.user,
+                    actor=request.user,
+                    category='leave_update',
+                    title='Leave request approved',
+                    message=f"{req.leave_type.name}: {req.start_date} → {req.end_date} ({req.days} days)",
+                    url='/leaves/my/'
+                )
         elif action == 'reject':
             req.status = 'rejected'
             req.approver = request.user
             req.approved_at = timezone.now()
             req.save()
             messages.info(request, 'Leave rejected.')
+            # Notify employee
+            if req.employee.user:
+                Notification.objects.create(
+                    recipient=req.employee.user,
+                    actor=request.user,
+                    category='leave_update',
+                    title='Leave request rejected',
+                    message=f"{req.leave_type.name}: {req.start_date} → {req.end_date} ({req.days} days)",
+                    url='/leaves/my/'
+                )
         else:
             messages.error(request, 'Unknown action.')
         return redirect('leaves:approve')
+
+class LeaveRequestDeleteView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        req = get_object_or_404(LeaveRequest, pk=pk, employee__user=request.user)
+        if req.status != 'pending':
+            messages.error(request, 'Only pending requests can be removed.')
+            return redirect('leaves:my')
+        req.delete()
+        messages.success(request, 'Leave request removed.')
+        return redirect('leaves:my')

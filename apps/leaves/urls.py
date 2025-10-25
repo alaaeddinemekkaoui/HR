@@ -10,6 +10,7 @@ urlpatterns = [
 
     path('my/', views.MyLeavesView.as_view(), name='my'),
     path('request/', views.LeaveRequestCreateView.as_view(), name='request'),
+    path('request/<int:pk>/delete/', views.LeaveRequestDeleteView.as_view(), name='request_delete'),
 
     path('approve/', views.LeaveApproveListView.as_view(), name='approve'),
     path('approve/<int:pk>/', views.LeaveApproveActionView.as_view(), name='approve_action'),

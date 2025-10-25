@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}My Dashboard{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <h1 class="h3 mb-1">My Dashboard</h1>
+  <p class="text-muted">Welcome back{% if employee %}, {{ employee.full_name }}{% endif %}</p>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="bi bi-calendar-event text-primary"></i> Recent Leave Requests</h6>
+        <a href="{% url 'leaves:my' %}" class="btn btn-sm btn-outline-primary">View all</a>
+      </div>
+      <div class="card-body">
+        {% if my_leaves and my_leaves|length > 0 %}
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Period</th>
+                  <th>Days</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for lr in my_leaves %}
+                <tr>
+                  <td>{{ lr.leave_type.name }}</td>
+                  <td>{{ lr.start_date }} → {{ lr.end_date }}</td>
+                  <td>{{ lr.days }}</td>
+                  <td>
+                    {% if lr.status == 'approved' %}
+                      <span class="badge bg-success">Approved</span>
+                    {% elif lr.status == 'rejected' %}
+                      <span class="badge bg-danger">Rejected</span>
+                    {% elif lr.status == 'cancelled' %}
+                      <span class="badge bg-secondary">Cancelled</span>
+                    {% else %}
+                      <span class="badge bg-warning text-dark">Pending</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="text-muted mb-0">No recent leave requests.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if employee %}
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom">
+        <h6 class="mb-0"><i class="bi bi-person-badge text-primary"></i> My Profile Snapshot</h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <small class="text-muted">Position</small>
+            <div>{{ employee.position.name }}</div>
+          </div>
+          <div class="col-md-6">
+            <small class="text-muted">Organization</small>
+            <div>{{ employee.organizational_path }}</div>
+          </div>
+          <div class="col-md-6">
+            <small class="text-muted">Grade</small>
+            <div>{{ employee.grade_display }}</div>
+          </div>
+          <div class="col-md-6">
+            <small class="text-muted">Time in Grade</small>
+            <div>{{ employee.time_in_grade_display }}</div>
+          </div>
+        </div>
+        <div class="mt-3">
+          <a class="btn btn-outline-primary btn-sm" href="/auth/profile/"><i class="bi bi-box-arrow-up-right"></i> View Profile</a>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="bi bi-wallet2 text-primary"></i> My Leave Balances ({% now 'Y' %})</h6>
+        <a href="{% url 'leaves:my' %}" class="small">Details</a>
+      </div>
+      <div class="card-body">
+        {% if my_balances and my_balances|length > 0 %}
+          <ul class="list-group list-group-flush">
+            {% for b in my_balances %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>{{ b.leave_type.name }}</span>
+              <span class="badge bg-primary rounded-pill">{{ b.closing }}</span>
+            </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted mb-0">No balance records found for this year.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom">
+        <h6 class="mb-0"><i class="bi bi-lightning-fill text-primary"></i> Quick Actions</h6>
+      </div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <a href="{% url 'leaves:request' %}" class="btn btn-outline-primary"><i class="bi bi-calendar-plus"></i> Request Leave</a>
+          <a href="{% url 'leaves:my' %}" class="btn btn-outline-secondary"><i class="bi bi-calendar-event"></i> View My Leaves</a>
+          <a href="/employees/" class="btn btn-outline-secondary"><i class="bi bi-people"></i> Browse Employees</a>
+          {% if approvals_count and approvals_count > 0 %}
+            <a href="{% url 'leaves:approve' %}" class="btn btn-outline-success"><i class="bi bi-check2-circle"></i> Approvals ({{ approvals_count }})</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.hover-card { transition: all 0.2s ease; cursor: pointer; }
+.hover-card:hover { background: var(--hover-bg); border-color: var(--primary-blue) !important; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+</style>
+{% endblock %}

@@ -117,6 +117,23 @@ class EmployeeDeleteAccountView(PermissionRequiredMixin, View):
 class EmployeeListView(View):
     def get(self, request):
         employees = list_employees()
+
+        # Scope restriction for regular users (see only coworkers in the same direct assignment)
+        if not request.user.is_superuser and not request.user.groups.filter(name__in=['HR Admin', 'IT Admin']).exists():
+            emp = getattr(request.user, 'employee_profile', None)
+            from django.db.models import Q
+            scope_q = Q(user=request.user)  # always include self
+            if emp:
+                if emp.service_id:
+                    scope_q |= Q(service_id=emp.service_id)
+                elif emp.division_id:
+                    scope_q |= Q(division_id=emp.division_id, service__isnull=True)
+                elif emp.direction_id:
+                    scope_q |= Q(direction_id=emp.direction_id, division__isnull=True, service__isnull=True)
+            else:
+                # No employee profile: restrict to none except self (which likely won't match if no link)
+                pass
+            employees = employees.filter(scope_q)
         
         # Search functionality (support both 'search' and 'q' parameters)
         search_query = request.GET.get('search', '') or request.GET.get('q', '')
@@ -159,10 +176,29 @@ class EmployeeListView(View):
         page_number = request.GET.get('page', 1)
         page_obj = paginator.get_page(page_number)
         
-        # Dropdown choices
-        directions = Direction.objects.filter(is_active=True).order_by('name')
-        divisions = Division.objects.filter(is_active=True).order_by('name')
-        services = Service.objects.filter(is_active=True).order_by('name')
+        # Dropdown choices (limit to user's scope for regular users)
+        if request.user.is_superuser or request.user.groups.filter(name__in=['HR Admin', 'IT Admin']).exists():
+            directions = Direction.objects.filter(is_active=True).order_by('name')
+            divisions = Division.objects.filter(is_active=True).order_by('name')
+            services = Service.objects.filter(is_active=True).order_by('name')
+        else:
+            emp = getattr(request.user, 'employee_profile', None)
+            if emp and emp.service_id:
+                directions = Direction.objects.filter(pk=emp.direction_id, is_active=True)
+                divisions = Division.objects.filter(pk=emp.division_id, is_active=True)
+                services = Service.objects.filter(pk=emp.service_id, is_active=True)
+            elif emp and emp.division_id:
+                directions = Direction.objects.filter(pk=emp.direction_id, is_active=True)
+                divisions = Division.objects.filter(pk=emp.division_id, is_active=True)
+                services = Service.objects.filter(division_id=emp.division_id, is_active=True)
+            elif emp and emp.direction_id:
+                directions = Direction.objects.filter(pk=emp.direction_id, is_active=True)
+                divisions = Division.objects.filter(direction_id=emp.direction_id, is_active=True)
+                services = Service.objects.filter(direction_id=emp.direction_id, is_active=True)
+            else:
+                directions = Direction.objects.none()
+                divisions = Division.objects.none()
+                services = Service.objects.none()
         
         context = {
             'page_obj': page_obj,
@@ -182,6 +218,27 @@ class EmployeeListView(View):
 class EmployeeDetailView(View):
     def get(self, request, pk: int):
         employee = get_object_or_404(Employee, pk=pk)
+        # Restrict visibility to scope for non-admin users
+        if not request.user.is_superuser and not request.user.groups.filter(name__in=['HR Admin', 'IT Admin']).exists():
+            my_emp = getattr(request.user, 'employee_profile', None)
+            allowed = False
+            if my_emp and my_emp.id == employee.id:
+                allowed = True
+            else:
+                from django.db.models import Q
+                scope_q = Q()
+                if my_emp:
+                    if my_emp.service_id:
+                        scope_q = Q(service_id=my_emp.service_id)
+                    elif my_emp.division_id:
+                        scope_q = Q(division_id=my_emp.division_id, service__isnull=True)
+                    elif my_emp.direction_id:
+                        scope_q = Q(direction_id=my_emp.direction_id, division__isnull=True, service__isnull=True)
+                if scope_q and Employee.objects.filter(pk=employee.pk).filter(scope_q).exists():
+                    allowed = True
+            if not allowed:
+                messages.error(request, 'You are not allowed to view this employee.')
+                return redirect('employees:list')
         return render(request, 'employees/detail.html', {'employee': employee})
 
 

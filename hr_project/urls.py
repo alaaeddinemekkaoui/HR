@@ -11,4 +11,5 @@ urlpatterns = [
     path('dashboard/', include('apps.admin_dashboard.urls', namespace='admin_dashboard')),
     path('roles/', include('apps.roles.urls', namespace='roles')),
     path('leaves/', include('apps.leaves.urls', namespace='leaves')),
+    path('notifications/', include('apps.notifications.urls', namespace='notifications')),
 ]

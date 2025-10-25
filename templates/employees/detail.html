@@ -12,6 +12,7 @@
 </div>
 
 <!-- Employee Header -->
+<div class="profile-sections">
 <div class="card mb-3 border-0 shadow-sm">
   <div class="card-body">
     <div class="d-flex justify-content-between align-items-start">
@@ -144,7 +145,7 @@
       <div class="col-md-4">
         <label class="text-muted small">Hire Date</label>
         <div>{{ employee.hire_date|date:"M d, Y" }}</div>
-      </div>
+        </div>
     </div>
   </div>
 </div>
@@ -183,11 +184,18 @@
 <div class="card mb-3 border-0 shadow-sm">
   <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
     <h6 class="mb-0"><i class="bi bi-shield-lock text-primary"></i> User Account</h6>
-    {% if perms.auth.change_user %}
-    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modifyAccountModal">
-      <i class="bi bi-pencil"></i> Modify
-    </button>
-    {% endif %}
+    <div class="d-flex gap-2">
+      {% if perms.auth.change_user %}
+      <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modifyAccountModal">
+        <i class="bi bi-pencil"></i> Modify
+      </button>
+      {% endif %}
+      {% if perms.auth.delete_user %}
+      <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+        <i class="bi bi-trash"></i> Delete
+      </button>
+      {% endif %}
+    </div>
   </div>
   <div class="card-body">
     <div class="row g-3">
@@ -216,17 +224,18 @@
       </div>
     </div>
   </div>
+  </div>
 </div>
 {% elif perms.auth.add_user %}
-<div class="card mb-3 border-0 shadow-sm border-warning">
-  <div class="card-header bg-white border-bottom">
-    <h6 class="mb-0"><i class="bi bi-exclamation-triangle text-warning"></i> User Account</h6>
+<div class="card mb-3 border-0 shadow-sm">
+  <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+    <h6 class="mb-0"><i class="bi bi-shield-lock text-primary"></i> User Account</h6>
+    <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#createAccountModal">
+      <i class="bi bi-person-plus"></i> Create
+    </button>
   </div>
   <div class="card-body">
-    <p class="text-muted mb-3">No user account exists for this employee. Create one to allow system access.</p>
-    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createAccountModal">
-      <i class="bi bi-person-plus"></i> Create User Account
-    </button>
+    <p class="text-muted mb-0">No user account exists for this employee. Create one to allow system access.</p>
   </div>
 </div>
 {% endif %}
@@ -282,6 +291,7 @@
 <!-- Modals -->
 
 <!-- Create Account Modal -->
+<div class="modal fade" id="createAccountModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">

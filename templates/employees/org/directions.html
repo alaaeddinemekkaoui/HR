@@ -1,9 +1,12 @@
 {% extends 'base.html' %}
+{% load roles_extras %}
 {% block title %}Directions{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="h3">Directions</h1>
-  <a class="btn btn-primary" href="{% url 'employees:org_direction_create' %}"><i class="bi bi-plus-circle"></i> Add Direction</a>
+  {% if request.user.is_superuser or request.user|has_group:'HR Admin' or request.user|has_group:'IT Admin' %}
+    <a class="btn btn-primary" href="{% url 'employees:org_direction_create' %}"><i class="bi bi-plus-circle"></i> Add Direction</a>
+  {% endif %}
 </div>
 <div class="card">
   <div class="card-body p-0">
@@ -24,8 +27,10 @@
             <td>{{ d.name }}</td>
             <td>{% if d.is_active %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-secondary">No</span>{% endif %}</td>
             <td class="text-end">
+              {% if request.user.is_superuser or request.user|has_group:'HR Admin' or request.user|has_group:'IT Admin' %}
                 <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete('{{ d.id }}', '{{ d.name|escapejs }}')">Delete</button>
-              <a class="btn btn-sm btn-outline-primary" href="{% url 'employees:org_direction_edit' d.id %}">Edit</a>
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'employees:org_direction_edit' d.id %}">Edit</a>
+              {% endif %}
             </td>
           </tr>
           {% empty %}
@@ -38,6 +43,7 @@
 </div>
 
 <!-- Delete Confirmation Modal -->
+{% if request.user.is_superuser or request.user|has_group:'HR Admin' or request.user|has_group:'IT Admin' %}
 <div class="modal fade" id="deleteModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -59,7 +65,6 @@
     </div>
   </div>
  </div>
-
 <script>
 function confirmDelete(id, name) {
   document.getElementById('deleteName').textContent = name;
@@ -67,4 +72,5 @@ function confirmDelete(id, name) {
   new bootstrap.Modal(document.getElementById('deleteModal')).show();
 }
 </script>
+{% endif %}
 {% endblock %}

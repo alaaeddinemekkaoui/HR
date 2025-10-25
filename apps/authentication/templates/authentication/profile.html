@@ -1,179 +1,247 @@
 {% extends 'base.html' %}
 {% block title %}Profile{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h3">My Profile</h1>
-  <div class="d-flex gap-2">
-    <a class="btn btn-outline-secondary" href="/accounts/password_change/"><i class="bi bi-key"></i> Change Password</a>
-  </div>
+<div class="profile-page">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3">My Profile</h1>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-primary" href="{% url 'authentication:account' %}"><i class="bi bi-person-gear"></i> Account Settings</a>
+      <a class="btn btn-outline-secondary" href="/accounts/password_change/"><i class="bi bi-key"></i> Change Password</a>
+    </div>
   </div>
 
-<div class="row">
-  <div class="col-lg-5">
-    <div class="card mb-3">
-      <div class="card-header">Account</div>
-      <div class="card-body">
-        <div class="mb-2"><span class="text-muted small">Username</span><div class="fw-bold">{{ user_obj.username }}</div></div>
-        <div class="mb-2"><span class="text-muted small">Email</span><div>{{ user_obj.email }}</div></div>
-        <div class="mb-2"><span class="text-muted small">Name</span><div>{{ user_obj.first_name }} {{ user_obj.last_name }}</div></div>
-        <div class="mb-2"><span class="text-muted small">Groups</span>
+  <div class="profile-sections">
+  <!-- Account -->
+  <div class="card mb-3">
+    <div class="card-header">Account</div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <span class="text-muted small">Username</span>
+          <div class="fw-bold">{{ user_obj.username }}</div>
+        </div>
+        {% if user_obj.email %}
+        <div class="col-md-4">
+          <span class="text-muted small">Email</span>
+          <div>{{ user_obj.email }}</div>
+        </div>
+        {% endif %}
+        {% if user_obj.first_name or user_obj.last_name %}
+        <div class="col-md-4">
+          <span class="text-muted small">Name</span>
+          <div>{{ user_obj.first_name }} {{ user_obj.last_name }}</div>
+        </div>
+        {% endif %}
+        <div class="col-12">
+          <span class="text-muted small">Groups</span>
           <div>
             {% if groups %}
               {% for g in groups %}<span class="badge bg-secondary me-1">{{ g }}</span>{% endfor %}
             {% else %}
-              <span class="text-muted">-</span>
+              <span class="text-muted">None</span>
             {% endif %}
           </div>
         </div>
       </div>
     </div>
   </div>
-  <div class="col-lg-7">
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span>Employee Information</span>
-        {% if employee %}
-          <a class="btn btn-sm btn-outline-primary" href="/employees/{{ employee.id }}/"><i class="bi bi-box-arrow-up-right"></i> View</a>
-        {% endif %}
-      </div>
-      <div class="card-body">
-        {% if not employee %}
-          <div class="text-muted">No employee record linked to this account.</div>
-        {% else %}
-          <div class="row g-3">
-            <div class="col-md-6">
-              <span class="text-muted small">Employee ID</span>
-              <div class="fw-bold">{{ employee.employee_id }}</div>
-            </div>
-            <div class="col-md-6">
-              <span class="text-muted small">Status</span>
-              <div><span class="badge bg-{% if employee.status == 'active' %}success{% elif employee.status == 'on_leave' %}warning{% else %}secondary{% endif %}">{{ employee.get_status_display }}</span></div>
-            </div>
-            <div class="col-md-6">
-              <span class="text-muted small">Full Name</span>
-              <div class="fw-bold">{{ employee.full_name }}</div>
-            </div>
-            <div class="col-md-6">
-              <span class="text-muted small">CIN</span>
-              <div class="fw-bold">{{ employee.cin }}</div>
-            </div>
-            <div class="col-md-6">
-              <span class="text-muted small">Phone</span>
-              <div>{% if employee.phone %}{{ employee.phone }}{% else %}-{% endif %}</div>
-            </div>
-            <div class="col-md-6">
-              <span class="text-muted small">Date of Birth</span>
-              <div>{{ employee.date_of_birth|date:"F d, Y"|default:"-" }}</div>
-            </div>
-            <div class="col-12">
-              <span class="text-muted small">Address</span>
-              <div>{{ employee.address|default:"-" }}</div>
-            </div>
-            <div class="col-12">
-              <span class="text-muted small">Organization</span>
-              <div>{{ employee.organizational_path|default:"-" }}</div>
-            </div>
-            <div class="col-md-6">
-              <span class="text-muted small">Position</span>
-              <div>{{ employee.position.name }}</div>
-            </div>
-            <div class="col-md-6">
-              <span class="text-muted small">Grade</span>
-              <div>{{ employee.grade_display }}</div>
-            </div>
-            <div class="col-md-4">
-              <span class="text-muted small">Contract</span>
-              <div>{{ employee.get_contract_type_display }}</div>
-            </div>
-            <div class="col-md-4">
-              <span class="text-muted small">Hire Date</span>
-              <div>{{ employee.hire_date|date:"F d, Y" }}</div>
-            </div>
-            <div class="col-md-4">
-              <span class="text-muted small">Titularisation</span>
-              <div>{{ employee.titularisation_date|date:"F d, Y"|default:"-" }}</div>
-            </div>
-            <div class="col-md-6">
-              <span class="text-muted small">Contract Start</span>
-              <div>{{ employee.contract_start_date|date:"F d, Y"|default:"-" }}</div>
-            </div>
-            <div class="col-md-6">
-              <span class="text-muted small">Contract End</span>
-              <div>{{ employee.contract_end_date|date:"F d, Y"|default:"-" }}</div>
-            </div>
+
+  <!-- Employee Information -->
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span>Employee Information</span>
+      {% if employee %}
+        <a class="btn btn-sm btn-outline-primary" href="/employees/{{ employee.id }}/"><i class="bi bi-box-arrow-up-right"></i> View</a>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      {% if not employee %}
+        <div class="text-muted">No employee record linked to this account.</div>
+      {% else %}
+        <div class="row g-3">
+          <div class="col-md-3">
+            <span class="text-muted small">Employee ID</span>
+            <div class="fw-bold">{{ employee.employee_id }}</div>
           </div>
-        {% endif %}
-      </div>
+          <div class="col-md-3">
+            <span class="text-muted small">Status</span>
+            <div><span class="badge bg-{% if employee.status == 'active' %}success{% elif employee.status == 'on_leave' %}warning{% else %}secondary{% endif %}">{{ employee.get_status_display }}</span></div>
+          </div>
+          <div class="col-md-3">
+            <span class="text-muted small">Full Name</span>
+            <div class="fw-bold">{{ employee.full_name }}</div>
+          </div>
+          <div class="col-md-3">
+            <span class="text-muted small">CIN</span>
+            <div class="fw-bold">{{ employee.cin }}</div>
+          </div>
+          {% if employee.phone %}
+          <div class="col-md-3">
+            <span class="text-muted small">Phone</span>
+            <div>{{ employee.phone }}</div>
+          </div>
+          {% endif %}
+          {% if employee.date_of_birth %}
+          <div class="col-md-3">
+            <span class="text-muted small">Date of Birth</span>
+            <div>{{ employee.date_of_birth|date:"F d, Y" }}</div>
+          </div>
+          {% endif %}
+          {% if employee.address %}
+          <div class="col-12">
+            <span class="text-muted small">Address</span>
+            <div>{{ employee.address }}</div>
+          </div>
+          {% endif %}
+          {% if employee.organizational_path %}
+          <div class="col-12">
+            <span class="text-muted small">Organization</span>
+            <div>{{ employee.organizational_path }}</div>
+          </div>
+          {% endif %}
+          <div class="col-md-4">
+            <span class="text-muted small">Position</span>
+            <div>{{ employee.position.name }}</div>
+          </div>
+          <div class="col-md-4">
+            <span class="text-muted small">Grade</span>
+            <div>{{ employee.grade_display }}</div>
+          </div>
+          <div class="col-md-4">
+            <span class="text-muted small">Contract</span>
+            <div>{{ employee.get_contract_type_display }}</div>
+          </div>
+          <div class="col-md-4">
+            <span class="text-muted small">Hire Date</span>
+            <div>{{ employee.hire_date|date:"F d, Y" }}</div>
+          </div>
+          {% if employee.titularisation_date %}
+          <div class="col-md-4">
+            <span class="text-muted small">Titularisation</span>
+            <div>{{ employee.titularisation_date|date:"F d, Y" }}</div>
+          </div>
+          {% endif %}
+          {% if employee.contract_start_date %}
+          <div class="col-md-4">
+            <span class="text-muted small">Contract Start</span>
+            <div>{{ employee.contract_start_date|date:"F d, Y" }}</div>
+          </div>
+          {% endif %}
+          {% if employee.contract_end_date %}
+          <div class="col-md-4">
+            <span class="text-muted small">Contract End</span>
+            <div>{{ employee.contract_end_date|date:"F d, Y" }}</div>
+          </div>
+          {% endif %}
+        </div>
+      {% endif %}
     </div>
   </div>
-</div>
 
-{% if employee %}
-<div class="row mt-3">
-  <div class="col-lg-7 order-lg-1 order-2">
-    <div class="card">
-      <div class="card-header">Change History</div>
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-sm mb-0">
-            <thead class="table-light">
-              <tr>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Details</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for h in history %}
-              <tr>
-                <td>{{ h.effective_date|date:"Y-m-d" }}</td>
-                <td>{{ h.get_change_type_display }}</td>
-                <td>
-                  <code class="small">{{ h.changes }}</code>
-                </td>
-              </tr>
-              {% empty %}
-              <tr><td colspan="3" class="text-center text-muted p-3">No history yet.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
+  {% if employee %}
+  <!-- Supervisors (M+1 / M+2) -->
+  <div class="card mb-3">
+    <div class="card-header">Supervisors (M+1 / M+2)</div>
+    <div class="card-body">
+      {% with m1=supervisors.m1 m2=supervisors.m2 %}
+      <div class="row g-3">
+        <div class="col-md-6">
+          <span class="text-muted small">M+1</span>
+          {% if m1 %}
+            <div class="fw-bold">{{ m1.full_name }} <span class="text-muted small">({{ m1.position.name }})</span></div>
+            <div class="small text-muted">{{ m1.organizational_path }}</div>
+          {% else %}
+            <div class="text-muted">-</div>
+          {% endif %}
+        </div>
+        <div class="col-md-6">
+          <span class="text-muted small">M+2</span>
+          {% if m2 %}
+            <div class="fw-bold">{{ m2.full_name }} <span class="text-muted small">({{ m2.position.name }})</span></div>
+            <div class="small text-muted">{{ m2.organizational_path }}</div>
+          {% else %}
+            <div class="text-muted">-</div>
+          {% endif %}
         </div>
       </div>
+      {% endwith %}
     </div>
   </div>
-  <div class="col-lg-5 order-lg-2 order-1 mb-3 mb-lg-0">
-    <div class="card h-100">
-      <div class="card-header">Career Progression</div>
-      <div class="card-body">
-        <div class="mb-2"><span class="text-muted small">Years in current grade</span><div class="fw-bold">{{ employee.years_in_grade }}</div></div>
-        <div class="mb-2"><span class="text-muted small">Retirement age</span><div>{{ employee.retirement_age }}</div></div>
-        <div class="mb-3"><span class="text-muted small">Estimated retirement date</span><div>{{ employee.retirement_date|date:"Y-m-d"|default:"-" }}</div></div>
-        <h6 class="mt-3">Next Grade Eligibility</h6>
-        {% if next_grade %}
-          <ul class="small mb-0">
-            {% for r in next_grade %}
-              <li>
-                To <strong>{{ r.target_grade.name }}</strong>:
-                {% if r.with_exam_years %}
-                  with exam ({{ r.with_exam_years }}y): <strong>{{ r.with_exam_date|date:"Y-m-d" }}</strong>
-                {% endif %}
-                {% if r.without_exam_years %}
-                  {% if r.with_exam_years %}<br>{% endif %}
-                  without exam ({{ r.without_exam_years }}y): <strong>{{ r.without_exam_date|date:"Y-m-d" }}</strong>
-                {% endif %}
-                {% if not r.with_exam_years and not r.without_exam_years %}
-                  <span class="text-muted">no rule years configured</span>
-                {% endif %}
-                {% if r.description %}<div class="text-muted">{{ r.description }}</div>{% endif %}
-              </li>
+  <!-- Career Progression -->
+  <div class="card mb-3">
+    <div class="card-header">Career Progression</div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <span class="text-muted small">Time in current grade</span>
+          <div class="fw-bold">{{ time_in_grade|default:employee.time_in_grade_display }}</div>
+        </div>
+        <div class="col-md-4">
+          <span class="text-muted small">Retirement age</span>
+          <div>{{ employee.retirement_age }}</div>
+        </div>
+        <div class="col-md-4">
+          <span class="text-muted small">Estimated retirement date</span>
+          <div>{{ employee.retirement_date|date:"Y-m-d"|default:"-" }}</div>
+        </div>
+      </div>
+      <h6 class="mt-3">Next Grade Eligibility</h6>
+      {% if next_grade %}
+        <ul class="small mb-0">
+          {% for r in next_grade %}
+            <li>
+              To <strong>{{ r.target_grade.name }}</strong>:
+              {% if r.with_exam_years %}
+                with exam ({{ r.with_exam_years }}y): <strong>{{ r.with_exam_date|date:"Y-m-d" }}</strong>
+              {% endif %}
+              {% if r.without_exam_years %}
+                {% if r.with_exam_years %}<br>{% endif %}
+                without exam ({{ r.without_exam_years }}y): <strong>{{ r.without_exam_date|date:"Y-m-d" }}</strong>
+              {% endif %}
+              {% if not r.with_exam_years and not r.without_exam_years %}
+                <span class="text-muted">no rule years configured</span>
+              {% endif %}
+              {% if r.description %}<div class="text-muted">{{ r.description }}</div>{% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="text-muted small">No progression rules configured for this grade.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Change History -->
+  <div class="card mb-3">
+    <div class="card-header">Change History</div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for h in history %}
+            <tr>
+              <td>{{ h.effective_date|date:"Y-m-d" }}</td>
+              <td>{{ h.get_change_type_display }}</td>
+              <td>
+                <code class="small">{{ h.changes }}</code>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-center text-muted p-3">No history yet.</td></tr>
             {% endfor %}
-          </ul>
-        {% else %}
-          <div class="text-muted small">No progression rules configured for this grade.</div>
-        {% endif %}
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
+  {% endif %}
 </div>
-{% endif %}
+</div>
 {% endblock %}

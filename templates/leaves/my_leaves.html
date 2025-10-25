@@ -1,9 +1,14 @@
 {% extends 'base.html' %}
 {% block title %}My Leaves{% endblock %}
 {% block content %}
-<div class="mb-4">
-  <h1 class="h3 mb-1">My Leaves</h1>
-  <p class="text-muted">View your leave balances and request history</p>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1">My Leaves</h1>
+    <p class="text-muted mb-0">View your leave balances and request history</p>
+  </div>
+  <a class="btn btn-primary" href="{% url 'leaves:request' %}">
+    <i class="bi bi-plus-circle"></i> Request Leave
+  </a>
 </div>
 
 <!-- Leave Balances - Top -->
@@ -32,27 +37,13 @@
   {% empty %}
   <div class="col-12">
     <div class="alert alert-info">
-      <i class="bi bi-info-circle"></i> No leave balances available for {{ year }} .
+      <i class="bi bi-info-circle"></i> No leave balances available for {{ year }}.
     </div>
   </div>
   {% endfor %}
 </div>
 
-<!-- Action Buttons -->
-<div class="d-flex gap-2 mb-4">
-  {% for b in balances %}
-    {% if b.closing > 0 or b.leave_type.name == "Congé Exceptionnel" %}
-      <a class="btn btn-primary" href="{% url 'leaves:request' %}?type={{ b.leave_type.id }}">
-        <i class="bi bi-plus-circle"></i> Request {{ b.leave_type.name }}
-      </a>
-    {% endif %}
-  {% endfor %}
-  {% if not balances %}
-    <a class="btn btn-primary" href="{% url 'leaves:request' %}">
-      <i class="bi bi-plus-circle"></i> Request Leave
-    </a>
-  {% endif %}
-</div>
+<!-- Removed per-type action buttons to keep a single action above -->
 
 <!-- Recent Requests - Full Width -->
 <div class="card border-0 shadow-sm">
@@ -91,6 +82,14 @@
               <a href="#" class="btn btn-sm btn-outline-primary" title="View Details">
                 <i class="bi bi-eye"></i>
               </a>
+              {% if r.status == 'pending' %}
+              <form method="post" action="{% url 'leaves:request_delete' r.id %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove" onclick="return confirm('Remove this pending request?');">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+              {% endif %}
             </td>
           </tr>
           {% empty %}

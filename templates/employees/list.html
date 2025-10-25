@@ -4,8 +4,8 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h1 class="h3 mb-0">Employees</h1>
   <div class="d-flex gap-2">
-    <button type="button" class="btn btn-outline-secondary" id="toggleViewBtn" onclick="toggleEmployeeView()">
-      <i class="bi bi-arrows-expand"></i> <span id="viewBtnText">Expand</span>
+    <button type="button" class="btn btn-outline-secondary" onclick="toggleSearchFilters()">
+      <i class="bi bi-funnel" id="searchIcon"></i> <span id="searchBtnText">Search</span>
     </button>
     {% if perms.employees.add_employee %}
     <a class="btn btn-primary" href="{% url 'employees:create' %}">
@@ -25,15 +25,15 @@
   {% endfor %}
 {% endif %}
 
-<!-- Search and Filters -->
-<div class="card mb-3">
+<!-- Search and Filters (Collapsible) -->
+<div class="card mb-3" id="searchFiltersCard" style="display: none;">
   <div class="card-body">
-    <form method="get" class="row g-3">
+    <form method="get" class="row g-3" id="filterForm">
       <div class="col-md-4">
         <input type="text" name="search" class="form-control" placeholder="Search by name, email, or ID" value="{{ search_query }}">
       </div>
       <div class="col-md-2">
-        <select name="direction" class="form-select">
+        <select name="direction" class="form-select" id="directionFilter" onchange="this.form.submit()">
           <option value="">All Directions</option>
           {% for d in directions %}
           <option value="{{ d.id }}" {% if direction_id == d.id %}selected{% endif %}>{{ d.name }}</option>
@@ -41,7 +41,7 @@
         </select>
       </div>
       <div class="col-md-2">
-        <select name="division" class="form-select">
+        <select name="division" class="form-select" id="divisionFilter" onchange="this.form.submit()">
           <option value="">All Divisions</option>
           {% for dv in divisions %}
           <option value="{{ dv.id }}" {% if division_id == dv.id %}selected{% endif %}>{{ dv.name }}</option>
@@ -49,7 +49,7 @@
         </select>
       </div>
       <div class="col-md-2">
-        <select name="service" class="form-select">
+        <select name="service" class="form-select" id="serviceFilter" onchange="this.form.submit()">
           <option value="">All Services</option>
           {% for s in services %}
           <option value="{{ s.id }}" {% if service_id == s.id %}selected{% endif %}>{{ s.name }}</option>
@@ -57,7 +57,7 @@
         </select>
       </div>
       <div class="col-md-2">
-        <select name="status" class="form-select">
+        <select name="status" class="form-select" onchange="this.form.submit()">
           <option value="">All Status</option>
           {% for value, label in status_choices %}
           <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
@@ -65,16 +65,14 @@
         </select>
       </div>
       <div class="col-md-2">
-        <button type="submit" class="btn btn-secondary w-100">Filter</button>
+        <button type="submit" class="btn btn-secondary w-100">
+          <i class="bi bi-search"></i> Filter
+        </button>
       </div>
       <div class="col-md-2">
-        <select name="page_size" class="form-select" onchange="this.form.submit()">
-          <option value="5" {% if request.GET.page_size == '5' %}selected{% endif %}>5 per page</option>
-          <option value="10" {% if request.GET.page_size == '10' or not request.GET.page_size %}selected{% endif %}>10 per page</option>
-          <option value="25" {% if request.GET.page_size == '25' %}selected{% endif %}>25 per page</option>
-          <option value="50" {% if request.GET.page_size == '50' %}selected{% endif %}>50 per page</option>
-          <option value="100" {% if request.GET.page_size == '100' %}selected{% endif %}>100 per page</option>
-        </select>
+        <a href="{% url 'employees:list' %}" class="btn btn-outline-secondary w-100">
+          <i class="bi bi-x-circle"></i> Clear
+        </a>
       </div>
     </form>
   </div>
@@ -168,7 +166,7 @@
       <ul class="pagination justify-content-center mb-0">
         {% if page_obj.has_previous %}
         <li class="page-item">
-          <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if direction_id %}&direction={{ direction_id }}{% endif %}{% if division_id %}&division={{ division_id }}{% endif %}{% if service_id %}&service={{ service_id }}{% endif %}">Previous</a>
+          <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if direction_id %}&direction={{ direction_id }}{% endif %}{% if division_id %}&division={{ division_id }}{% endif %}{% if service_id %}&service={{ service_id }}{% endif %}{% if request.GET.page_size %}&page_size={{ request.GET.page_size }}{% endif %}">Previous</a>
         </li>
         {% endif %}
         
@@ -177,14 +175,14 @@
           <li class="page-item active"><span class="page-link">{{ num }}</span></li>
           {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
           <li class="page-item">
-            <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if direction_id %}&direction={{ direction_id }}{% endif %}{% if division_id %}&division={{ division_id }}{% endif %}{% if service_id %}&service={{ service_id }}{% endif %}">{{ num }}</a>
+            <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if direction_id %}&direction={{ direction_id }}{% endif %}{% if division_id %}&division={{ division_id }}{% endif %}{% if service_id %}&service={{ service_id }}{% endif %}{% if request.GET.page_size %}&page_size={{ request.GET.page_size }}{% endif %}">{{ num }}</a>
           </li>
           {% endif %}
         {% endfor %}
         
         {% if page_obj.has_next %}
         <li class="page-item">
-          <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if direction_id %}&direction={{ direction_id }}{% endif %}{% if division_id %}&division={{ division_id }}{% endif %}{% if service_id %}&service={{ service_id }}{% endif %}">Next</a>
+          <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if direction_id %}&direction={{ direction_id }}{% endif %}{% if division_id %}&division={{ division_id }}{% endif %}{% if service_id %}&service={{ service_id }}{% endif %}{% if request.GET.page_size %}&page_size={{ request.GET.page_size }}{% endif %}">Next</a>
         </li>
         {% endif %}
       </ul>
@@ -193,32 +191,55 @@
   {% endif %}
 </div>
 
-<div class="mt-3 text-muted small">
-  Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} employees
+<div class="mt-3 d-flex justify-content-between align-items-center">
+  <div class="text-muted small">
+    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} employees
+  </div>
+  <form method="get" class="d-flex align-items-center gap-2">
+    <label class="text-muted small mb-0">Show:</label>
+    <select name="page_size" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+      <option value="5" {% if request.GET.page_size == '5' %}selected{% endif %}>5</option>
+      <option value="10" {% if request.GET.page_size == '10' or not request.GET.page_size %}selected{% endif %}>10</option>
+      <option value="25" {% if request.GET.page_size == '25' %}selected{% endif %}>25</option>
+      <option value="50" {% if request.GET.page_size == '50' %}selected{% endif %}>50</option>
+      <option value="100" {% if request.GET.page_size == '100' %}selected{% endif %}>100</option>
+    </select>
+    <!-- Preserve filters -->
+    {% if search_query %}<input type="hidden" name="search" value="{{ search_query }}">{% endif %}
+    {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+    {% if direction_id %}<input type="hidden" name="direction" value="{{ direction_id }}">{% endif %}
+    {% if division_id %}<input type="hidden" name="division" value="{{ division_id }}">{% endif %}
+    {% if service_id %}<input type="hidden" name="service" value="{{ service_id }}">{% endif %}
+  </form>
 </div>
 
 <script>
-let isExpanded = false;
+let isSearchVisible = false;
 
-function toggleEmployeeView() {
-  const table = document.getElementById('employeeTable');
-  const btn = document.getElementById('toggleViewBtn');
-  const btnText = document.getElementById('viewBtnText');
-  const icon = btn.querySelector('i');
+function toggleSearchFilters() {
+  const card = document.getElementById('searchFiltersCard');
+  const btn = document.querySelector('button[onclick="toggleSearchFilters()"]');
+  const btnText = document.getElementById('searchBtnText');
+  const icon = document.getElementById('searchIcon');
   
-  isExpanded = !isExpanded;
+  isSearchVisible = !isSearchVisible;
   
-  if (isExpanded) {
-    table.style.maxHeight = 'none';
-    table.classList.add('expanded');
-    btnText.textContent = 'Collapse';
-    icon.className = 'bi bi-arrows-collapse';
+  if (isSearchVisible) {
+    card.style.display = 'block';
+    btnText.textContent = 'Hide';
+    icon.className = 'bi bi-funnel-fill';
   } else {
-    table.style.maxHeight = '';
-    table.classList.remove('expanded');
-    btnText.textContent = 'Expand';
-    icon.className = 'bi bi-arrows-expand';
+    card.style.display = 'none';
+    btnText.textContent = 'Search';
+    icon.className = 'bi bi-funnel';
   }
 }
+
+// Show search filters if any filter is active
+{% if search_query or status_filter or direction_id or division_id or service_id %}
+document.addEventListener('DOMContentLoaded', function() {
+  toggleSearchFilters();
+});
+{% endif %}
 </script>
 {% endblock %}

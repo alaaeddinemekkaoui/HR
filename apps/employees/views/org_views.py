@@ -13,7 +13,7 @@ class ITAdminOnlyMixin(UserPassesTestMixin):
         return user.is_authenticated and (user.is_superuser or user.groups.filter(name='IT Admin').exists())
 
 
-class DirectionListView(LoginRequiredMixin, ITAdminOnlyMixin, View):
+class DirectionListView(LoginRequiredMixin, View):
     def get(self, request):
         directions = Direction.objects.all().order_by('name')
         return render(request, 'employees/org/directions.html', {'directions': directions})
@@ -61,7 +61,7 @@ class DirectionDeleteView(LoginRequiredMixin, ITAdminOnlyMixin, View):
         return redirect('employees:org_directions')
 
 
-class DivisionListView(LoginRequiredMixin, ITAdminOnlyMixin, View):
+class DivisionListView(LoginRequiredMixin, View):
     def get(self, request):
         divisions = Division.objects.select_related('direction').all().order_by('direction__name', 'name')
         return render(request, 'employees/org/divisions.html', {'divisions': divisions})
@@ -109,7 +109,7 @@ class DivisionDeleteView(LoginRequiredMixin, ITAdminOnlyMixin, View):
         return redirect('employees:org_divisions')
 
 
-class ServiceListView(LoginRequiredMixin, ITAdminOnlyMixin, View):
+class ServiceListView(LoginRequiredMixin, View):
     def get(self, request):
         services = Service.objects.select_related('direction', 'division', 'division__direction').all().order_by('name')
         return render(request, 'employees/org/services.html', {'services': services})
