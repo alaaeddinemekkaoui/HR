@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Create Role with Permissions{% endblock %}
+{% block content %}
+<h1 class="h3">Create New Role</h1>
+<form method="post" class="card mt-3">
+  <div class="card-body">
+    {% csrf_token %}
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <label class="form-label">Role name</label>
+        <input type="text" name="name" class="form-control" placeholder="e.g., HR Manager" required />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Description (optional)</label>
+        <input type="text" name="description" class="form-control" />
+      </div>
+    </div>
+
+    <h6 class="mb-2">Function permissions</h6>
+    {% for module, funcs in modules.items %}
+      <div class="mb-2">
+        <div class="fw-bold">{{ module|title }}</div>
+        <div class="row">
+          {% for f in funcs %}
+          <div class="col-md-4 form-check">
+            <input class="form-check-input" type="checkbox" name="functions" id="f{{ f.id }}" value="{{ f.id }}" />
+            <label class="form-check-label" for="f{{ f.id }}">{{ f.name }} <small class="text-muted">({{ f.code }})</small></label>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <hr/>
+    {% endfor %}
+  </div>
+  <div class="card-footer d-flex justify-content-end gap-2">
+    <a href="{% url 'roles:role_list' %}" class="btn btn-outline-secondary">Cancel</a>
+    <button type="submit" class="btn btn-primary">Create Role</button>
+  </div>
+</form>
+{% endblock %}

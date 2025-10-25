@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}{{ mode|title }} Grade Rule{% endblock %}
+{% block content %}
+<h1 class="h3">{% if mode == 'create' %}Create{% else %}Edit{% endif %} Grade Progression Rule</h1>
+<form method="post" class="card mt-3">
+  {% csrf_token %}
+  <div class="card-body">
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">From Grade</label>
+        {{ form.source_grade }}
+        {% if form.source_grade.errors %}<div class="text-danger small">{{ form.source_grade.errors.0 }}</div>{% endif %}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">To Grade</label>
+        {{ form.target_grade }}
+        {% if form.target_grade.errors %}<div class="text-danger small">{{ form.target_grade.errors.0 }}</div>{% endif %}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Years with exam (optional)</label>
+        {{ form.years_with_exam }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Years without exam (optional)</label>
+        {{ form.years_without_exam }}
+      </div>
+      <div class="col-md-9">
+        <label class="form-label">Description</label>
+        {{ form.description }}
+      </div>
+      <div class="col-md-3 form-check mt-4">
+        {{ form.is_active }} <label class="form-check-label">Active</label>
+      </div>
+    </div>
+  </div>
+  <div class="card-footer d-flex gap-2">
+    <a class="btn btn-secondary" href="{% url 'employees:rules_list' %}">Cancel</a>
+    <button class="btn btn-primary">Save</button>
+  </div>
+</form>
+{% endblock %}

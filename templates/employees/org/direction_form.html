@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}{{ mode|title }} Direction{% endblock %}
+{% block content %}
+<h1 class="h3">{% if mode == 'create' %}Create{% else %}Edit{% endif %} Direction</h1>
+<form method="post" class="card mt-3">
+  {% csrf_token %}
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Code</label>
+        {{ form.code }}
+        {% if form.code.errors %}<div class="text-danger small">{{ form.code.errors.0 }}</div>{% endif %}
+      </div>
+      <div class="col-md-8">
+        <label class="form-label">Name</label>
+        {{ form.name }}
+        {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors.0 }}</div>{% endif %}
+      </div>
+      <div class="col-12">
+        <label class="form-label">Description</label>
+        {{ form.description }}
+      </div>
+      <div class="col-12 form-check">
+        {{ form.is_active }} <label class="form-check-label">Active</label>
+      </div>
+    </div>
+  </div>
+  <div class="card-footer d-flex gap-2">
+    <a class="btn btn-secondary" href="{% url 'employees:org_directions' %}">Cancel</a>
+    <button class="btn btn-primary">Save</button>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}{% if mode == 'edit' %}Edit Grade{% else %}Add Grade{% endif %}{% endblock %}
+{% block content %}
+<h1 class="h3">{% if mode == 'edit' %}Edit Grade{% else %}Add Grade{% endif %}</h1>
+<form method="post" class="card mt-3">
+  <div class="card-body">
+    {% csrf_token %}
+    <div class="row g-3">
+      <div class="col-md-6">{{ form.name.label_tag }} {{ form.name }}</div>
+      <div class="col-md-6">{{ form.code.label_tag }} {{ form.code }}</div>
+      <div class="col-md-6">{{ form.category.label_tag }} {{ form.category }}</div>
+      <div class="col-md-12">{{ form.description.label_tag }} {{ form.description }}</div>
+      <div class="col-md-12 form-check">{{ form.is_active }} {{ form.is_active.label_tag }}</div>
+    </div>
+  </div>
+  <div class="card-footer d-flex justify-content-end gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'employees:grade_list' %}">Cancel</a>
+    <button class="btn btn-primary" type="submit">Save</button>
+  </div>
+</form>
+{% endblock %}

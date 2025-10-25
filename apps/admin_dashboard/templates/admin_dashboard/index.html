@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <h1 class="h3 mb-1">Dashboard</h1>
+  <p class="text-muted">Overview of HR System</p>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-4 mb-4">
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <p class="text-muted mb-1 small">Total Employees</p>
+            <h3 class="mb-0">{{ total_employees|default:"0" }}</h3>
+          </div>
+          <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: rgba(79, 124, 255, 0.1);">
+            <i class="bi bi-people text-primary" style="font-size: 24px;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <p class="text-muted mb-1 small">Active Employees</p>
+            <h3 class="mb-0">{{ active_employees|default:"0" }}</h3>
+          </div>
+          <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: rgba(22, 199, 132, 0.1);">
+            <i class="bi bi-person-check" style="font-size: 24px; color: var(--success);"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <p class="text-muted mb-1 small">Pending Leaves</p>
+            <h3 class="mb-0">{{ pending_leaves|default:"0" }}</h3>
+          </div>
+          <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: rgba(255, 167, 38, 0.1);">
+            <i class="bi bi-calendar-event" style="font-size: 24px; color: var(--warning);"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <p class="text-muted mb-1 small">Total Users</p>
+            <h3 class="mb-0">{{ total_users|default:"0" }}</h3>
+          </div>
+          <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: rgba(138, 43, 226, 0.1);">
+            <i class="bi bi-person-gear text-purple" style="font-size: 24px; color: #8A2BE2;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom">
+        <h6 class="mb-0"><i class="bi bi-lightning-fill text-primary"></i> Quick Actions</h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <a href="{% url 'employees:create' %}" class="text-decoration-none">
+              <div class="p-3 border rounded hover-card text-center">
+                <i class="bi bi-person-plus-fill text-primary" style="font-size: 32px;"></i>
+                <p class="mb-0 mt-2 fw-medium">Add Employee</p>
+              </div>
+            </a>
+          </div>
+          <div class="col-md-4">
+            <a href="{% url 'leaves:request' %}" class="text-decoration-none">
+              <div class="p-3 border rounded hover-card text-center">
+                <i class="bi bi-calendar-plus text-success" style="font-size: 32px;"></i>
+                <p class="mb-0 mt-2 fw-medium">Request Leave</p>
+              </div>
+            </a>
+          </div>
+          <div class="col-md-4">
+            <a href="{% url 'leaves:approve' %}" class="text-decoration-none">
+              <div class="p-3 border rounded hover-card text-center">
+                <i class="bi bi-check2-circle text-info" style="font-size: 32px;"></i>
+                <p class="mb-0 mt-2 fw-medium">Approve Leaves</p>
+              </div>
+            </a>
+          </div>
+          <div class="col-md-4">
+            <a href="{% url 'roles:users' %}" class="text-decoration-none">
+              <div class="p-3 border rounded hover-card text-center">
+                <i class="bi bi-person-gear text-warning" style="font-size: 32px;"></i>
+                <p class="mb-0 mt-2 fw-medium">Manage Users</p>
+              </div>
+            </a>
+          </div>
+          <div class="col-md-4">
+            <a href="{% url 'employees:org_directions' %}" class="text-decoration-none">
+              <div class="p-3 border rounded hover-card text-center">
+                <i class="bi bi-diagram-3 text-purple" style="font-size: 32px; color: #8A2BE2;"></i>
+                <p class="mb-0 mt-2 fw-medium">Organization</p>
+              </div>
+            </a>
+          </div>
+          <div class="col-md-4">
+            <a href="{% url 'employees:grade_list' %}" class="text-decoration-none">
+              <div class="p-3 border rounded hover-card text-center">
+                <i class="bi bi-award text-danger" style="font-size: 32px;"></i>
+                <p class="mb-0 mt-2 fw-medium">Grades</p>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom">
+        <h6 class="mb-0"><i class="bi bi-info-circle-fill text-primary"></i> System Info</h6>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <small class="text-muted">System Status</small>
+          <div class="d-flex align-items-center gap-2 mt-1">
+            <span class="badge bg-success">Online</span>
+            <small class="text-muted">All systems operational</small>
+          </div>
+        </div>
+        <div class="mb-3">
+          <small class="text-muted">Database</small>
+          <div class="d-flex align-items-center gap-2 mt-1">
+            <span class="badge bg-success">Connected</span>
+            <small class="text-muted">PostgreSQL</small>
+          </div>
+        </div>
+        <div>
+          <small class="text-muted">Your Role</small>
+          <div class="mt-1">
+            <span class="badge bg-primary">Administrator</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Activity (placeholder) -->
+<div class="row g-4">
+  <div class="col-lg-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="bi bi-clock-history text-primary"></i> Recent Activity</h6>
+        <a href="{% url 'employees:list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+      </div>
+      <div class="card-body">
+        <p class="text-muted text-center py-4">Activity tracking coming soon...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.hover-card {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.hover-card:hover {
+  background: var(--hover-bg);
+  border-color: var(--primary-blue) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+</style>
+{% endblock %}

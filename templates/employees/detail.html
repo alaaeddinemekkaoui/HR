@@ -1,0 +1,489 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ employee.full_name }}{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'employees:list' %}">Employees</a></li>
+      <li class="breadcrumb-item active">{{ employee.full_name }}</li>
+    </ol>
+  </nav>
+</div>
+
+<!-- Employee Header -->
+<div class="card mb-3 border-0 shadow-sm">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start">
+      <div class="d-flex gap-3 align-items-center">
+        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 64px; height: 64px; background: var(--primary-light); color: var(--primary-blue); font-size: 24px; font-weight: 600;">
+          {{ employee.first_name|slice:":1" }}{{ employee.last_name|slice:":1" }}
+        </div>
+        <div>
+          <h3 class="mb-1">{{ employee.full_name }}</h3>
+          <p class="text-muted mb-1">{{ employee.position.name }} • {{ employee.grade_display }}</p>
+          <div class="d-flex gap-2">
+            <span class="badge bg-{% if employee.status == 'active' %}success{% elif employee.status == 'on_leave' %}warning{% else %}secondary{% endif %}">
+              {{ employee.get_status_display }}
+            </span>
+            <span class="badge bg-info">{{ employee.get_contract_type_display }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        {% if perms.employees.change_employee %}
+        <a href="{% url 'employees:edit' employee.id %}" class="btn btn-outline-primary">
+          <i class="bi bi-pencil"></i> Edit
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Personal Information Section -->
+<div class="card mb-3 border-0 shadow-sm">
+  <div class="card-header bg-white border-bottom">
+    <h6 class="mb-0"><i class="bi bi-person-circle text-primary"></i> Personal Information</h6>
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="text-muted small">Employee ID</label>
+        <div class="fw-bold">{{ employee.employee_id }}</div>
+      </div>
+      {% if employee.ppr %}
+      <div class="col-md-3">
+        <label class="text-muted small">PPR</label>
+        <div class="fw-bold">{{ employee.ppr }}</div>
+      </div>
+      {% endif %}
+      <div class="col-md-3">
+        <label class="text-muted small">CIN</label>
+        <div class="fw-bold">{{ employee.cin }}</div>
+      </div>
+      {% if employee.date_of_birth %}
+      <div class="col-md-3">
+        <label class="text-muted small">Date of Birth</label>
+        <div>{{ employee.date_of_birth|date:"M d, Y" }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Contact Information Section -->
+<div class="card mb-3 border-0 shadow-sm">
+  <div class="card-header bg-white border-bottom">
+    <h6 class="mb-0"><i class="bi bi-envelope text-primary"></i> Contact Information</h6>
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="text-muted small">Email</label>
+        <div><a href="mailto:{{ employee.email }}" class="text-decoration-none">{{ employee.email }}</a></div>
+      </div>
+      {% if employee.phone %}
+      <div class="col-md-6">
+        <label class="text-muted small">Phone</label>
+        <div><a href="tel:{{ employee.phone }}" class="text-decoration-none">{{ employee.phone }}</a></div>
+      </div>
+      {% endif %}
+      {% if employee.address %}
+      <div class="col-12">
+        <label class="text-muted small">Address</label>
+        <div>{{ employee.address }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Organization Section -->
+<div class="card mb-3 border-0 shadow-sm">
+  <div class="card-header bg-white border-bottom">
+    <h6 class="mb-0"><i class="bi bi-building text-primary"></i> Organization</h6>
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="text-muted small">Direction</label>
+        <div class="fw-bold">{{ employee.direction.name }}</div>
+      </div>
+      {% if employee.division %}
+      <div class="col-md-4">
+        <label class="text-muted small">Division</label>
+        <div class="fw-bold">{{ employee.division.name }}</div>
+      </div>
+      {% endif %}
+      {% if employee.service %}
+      <div class="col-md-4">
+        <label class="text-muted small">Service</label>
+        <div class="fw-bold">{{ employee.service.name }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Employment Details Section -->
+<div class="card mb-3 border-0 shadow-sm">
+  <div class="card-header bg-white border-bottom">
+    <h6 class="mb-0"><i class="bi bi-briefcase text-primary"></i> Employment Details</h6>
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="text-muted small">Position</label>
+        <div class="fw-bold">{{ employee.position.name }}</div>
+      </div>
+      <div class="col-md-4">
+        <label class="text-muted small">Grade</label>
+        <div class="fw-bold">{{ employee.grade_display }}</div>
+      </div>
+      <div class="col-md-4">
+        <label class="text-muted small">Hire Date</label>
+        <div>{{ employee.hire_date|date:"M d, Y" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Contract Information Section (Only if NOT titulaire) -->
+{% if employee.contract_type != 'permanent' %}
+<div class="card mb-3 border-0 shadow-sm">
+  <div class="card-header bg-white border-bottom">
+    <h6 class="mb-0"><i class="bi bi-file-text text-primary"></i> Contract Information</h6>
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="text-muted small">Contract Type</label>
+        <div class="fw-bold">{{ employee.get_contract_type_display }}</div>
+      </div>
+      {% if employee.contract_start_date %}
+      <div class="col-md-4">
+        <label class="text-muted small">Contract Start</label>
+        <div>{{ employee.contract_start_date|date:"M d, Y" }}</div>
+      </div>
+      {% endif %}
+      {% if employee.contract_end_date %}
+      <div class="col-md-4">
+        <label class="text-muted small">Contract End</label>
+        <div>{{ employee.contract_end_date|date:"M d, Y" }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Account Information Section (Below employee info) -->
+{% if employee.user %}
+<div class="card mb-3 border-0 shadow-sm">
+  <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+    <h6 class="mb-0"><i class="bi bi-shield-lock text-primary"></i> User Account</h6>
+    {% if perms.auth.change_user %}
+    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modifyAccountModal">
+      <i class="bi bi-pencil"></i> Modify
+    </button>
+    {% endif %}
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="text-muted small">Username</label>
+        <div class="fw-bold">{{ employee.user.username }}</div>
+      </div>
+      <div class="col-md-3">
+        <label class="text-muted small">Email</label>
+        <div>{{ employee.user.email }}</div>
+      </div>
+      <div class="col-md-3">
+        <label class="text-muted small">Status</label>
+        <div>
+          <span class="badge {% if employee.user.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+            {% if employee.user.is_active %}Active{% else %}Inactive{% endif %}
+          </span>
+          {% if employee.user.is_superuser %}
+          <span class="badge bg-warning text-dark">Superuser</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="col-md-3">
+        <label class="text-muted small">Last Login</label>
+        <div>{{ employee.user.last_login|date:"M d, Y"|default:"Never" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% elif perms.auth.add_user %}
+<div class="card mb-3 border-0 shadow-sm border-warning">
+  <div class="card-header bg-white border-bottom">
+    <h6 class="mb-0"><i class="bi bi-exclamation-triangle text-warning"></i> User Account</h6>
+  </div>
+  <div class="card-body">
+    <p class="text-muted mb-3">No user account exists for this employee. Create one to allow system access.</p>
+    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createAccountModal">
+      <i class="bi bi-person-plus"></i> Create User Account
+    </button>
+  </div>
+</div>
+{% endif %}
+
+<!-- Career Progress Section -->
+<div class="card mb-3 border-0 shadow-sm">
+  <div class="card-header bg-white border-bottom">
+    <h6 class="mb-0"><i class="bi bi-graph-up text-primary"></i> Career Progress</h6>
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="text-muted small">Current Grade</label>
+        <div class="fw-bold">{{ employee.grade_display }}</div>
+      </div>
+      <div class="col-md-4">
+        <label class="text-muted small">Time in Grade</label>
+        <div class="fw-bold">{{ employee.time_in_grade_display }}</div>
+      </div>
+      {% if employee.titularisation_date %}
+      <div class="col-md-4">
+        <label class="text-muted small">Titularisation Date</label>
+        <div>{{ employee.titularisation_date|date:"M d, Y" }}</div>
+      </div>
+      {% elif employee.contract_type != 'permanent' %}
+      <div class="col-md-4">
+        <label class="text-muted small">Titularisation</label>
+          {% if employee.is_eligible_for_titularisation %}
+            <div class="text-success">
+              <i class="bi bi-check-circle"></i> Eligible
+            </div>
+            {% if perms.employees.change_employee %}
+            <button class="btn btn-sm btn-outline-success mt-2" data-bs-toggle="modal" data-bs-target="#titularisationModal">
+              Request Titularisation
+            </button>
+            {% endif %}
+          {% else %}
+            {% if employee.estimated_titularisation_date %}
+            <div class="text-warning">
+                <i class="bi bi-clock-history"></i> Estimated: {{ employee.estimated_titularisation_date|date:"M d, Y" }}
+            </div>
+              <small class="text-muted">After 1 year of service</small>
+          {% else %}
+              <div class="text-muted">Not applicable</div>
+          {% endif %}
+          {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Modals -->
+
+<!-- Create Account Modal -->
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-person-plus"></i> Create User Account</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{% url 'employees:create_account' employee.id %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="alert alert-info border-0">
+            <i class="bi bi-info-circle"></i> Creating account for <strong>{{ employee.full_name }}</strong>
+          </div>
+          
+          <div class="mb-3">
+            <label for="username" class="form-label">Username *</label>
+            <input 
+              type="text" 
+              name="username" 
+              id="username" 
+              class="form-control" 
+              required
+              placeholder="Enter username"
+              autocomplete="off"
+            >
+            <small class="form-text text-muted">Must be unique</small>
+          </div>
+          
+          <div class="mb-3">
+            <label for="password" class="form-label">Password *</label>
+            <input 
+              type="password" 
+              name="password" 
+              id="password" 
+              class="form-control" 
+              required
+              placeholder="Enter password"
+              autocomplete="new-password"
+            >
+          </div>
+          
+          <div class="mb-3">
+            <label for="password_confirm" class="form-label">Confirm Password *</label>
+            <input 
+              type="password" 
+              name="password_confirm" 
+              id="password_confirm" 
+              class="form-control" 
+              required
+              placeholder="Confirm password"
+              autocomplete="new-password"
+            >
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-check-circle"></i> Create Account
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modify Account Modal -->
+{% if employee.user %}
+<div class="modal fade" id="modifyAccountModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-pencil"></i> Modify User Account</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{% url 'employees:modify_account' employee.id %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="modify_username" class="form-label">Username *</label>
+            <input 
+              type="text" 
+              name="username" 
+              id="modify_username" 
+              class="form-control" 
+              value="{{ employee.user.username }}"
+              required
+            >
+          </div>
+          
+          <div class="mb-3">
+            <label for="modify_email" class="form-label">Email</label>
+            <input 
+              type="email" 
+              name="email" 
+              id="modify_email" 
+              class="form-control" 
+              value="{{ employee.user.email }}"
+            >
+          </div>
+          
+          <hr>
+          
+          <div class="form-check form-switch mb-2">
+            <input 
+              class="form-check-input" 
+              type="checkbox" 
+              name="is_active" 
+              id="is_active"
+              {% if employee.user.is_active %}checked{% endif %}
+            >
+            <label class="form-check-label" for="is_active">
+              Account Active
+            </label>
+          </div>
+          
+          <hr>
+          <p class="text-muted small mb-2">Leave password fields empty to keep current password</p>
+          
+          <div class="mb-3">
+            <label for="new_password" class="form-label">New Password</label>
+            <input 
+              type="password" 
+              name="new_password" 
+              id="new_password" 
+              class="form-control" 
+              placeholder="Enter new password (optional)"
+              autocomplete="new-password"
+            >
+          </div>
+          
+          <div class="mb-3">
+            <label for="new_password_confirm" class="form-label">Confirm New Password</label>
+            <input 
+              type="password" 
+              name="new_password_confirm" 
+              id="new_password_confirm" 
+              class="form-control" 
+              placeholder="Confirm new password"
+              autocomplete="new-password"
+            >
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle"></i> Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Account Modal -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title"><i class="bi bi-exclamation-triangle"></i> Delete User Account</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{% url 'employees:delete_account' employee.id %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle"></i> Are you sure you want to delete the user account for <strong>{{ employee.user.username }}</strong>?
+          </div>
+          <p class="text-muted small">This will remove system access but the employee record will remain.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger">
+            <i class="bi bi-trash"></i> Delete Account
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Delete Employee Modal -->
+<div class="modal fade" id="deleteEmployeeModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title"><i class="bi bi-exclamation-triangle"></i> Delete Employee</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete <strong>{{ employee.full_name }}</strong>?</p>
+        <p class="text-danger small mb-0">This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <form method="post" action="{% url 'employees:delete' employee.id %}" style="display:inline;">
+          {% csrf_token %}
+          <button class="btn btn-danger">
+            <i class="bi bi-trash"></i> Delete Employee
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

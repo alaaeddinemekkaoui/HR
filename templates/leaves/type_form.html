@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Leave Type{% endblock %}
+{% block content %}
+<h1 class="h3">Leave Type</h1>
+<form method="post" class="card mt-3">
+  {% csrf_token %}
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-3"><label class="form-label">Code</label>{{ form.code }}</div>
+      <div class="col-md-5"><label class="form-label">Name</label>{{ form.name }}</div>
+      <div class="col-md-4"><label class="form-label">Annual days</label>{{ form.annual_days }}</div>
+      <div class="col-md-12"><label class="form-label">Description</label>{{ form.description }}</div>
+      <div class="col-md-3 form-check mt-3">{{ form.paid }} <label class="form-check-label">Paid</label></div>
+      <div class="col-md-3 form-check mt-3">{{ form.prorata_monthly }} <label class="form-check-label">Prorata monthly</label></div>
+      <div class="col-md-3"><label class="form-label">Carry-over (years)</label>{{ form.carry_over_years }}</div>
+      <div class="col-md-3 form-check mt-3">{{ form.exclude_weekends }} <label class="form-check-label">Exclude weekends</label></div>
+      <div class="col-md-3 form-check mt-3">{{ form.requires_approval }} <label class="form-check-label">Requires approval</label></div>
+      <div class="col-md-3 form-check mt-3">{{ form.is_active }} <label class="form-check-label">Active</label></div>
+    </div>
+  </div>
+  <div class="card-footer d-flex gap-2">
+    <a class="btn btn-secondary" href="{% url 'leaves:types' %}">Cancel</a>
+    <button class="btn btn-primary">Save</button>
+  </div>
+</form>
+{% endblock %}

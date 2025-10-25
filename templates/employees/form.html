@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+{% block title %}{{ mode|title }} Employee{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <h1 class="h3">{% if mode == 'create' %}Create New{% else %}Edit{% endif %} Employee</h1>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'employees:list' %}">Employees</a></li>
+      <li class="breadcrumb-item active">{% if mode == 'create' %}Create{% else %}Edit{% endif %}</li>
+    </ol>
+  </nav>
+</div>
+
+<!-- Messages -->
+{% if messages %}
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+{% endif %}
+
+<div class="row">
+  <div class="col-lg-8">
+    <form method="post" class="card">
+      {% csrf_token %}
+      <div class="card-body">
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <h5 class="card-title mb-3">Personal Information</h5>
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label">Employee ID <span class="text-danger">*</span></label>
+            {{ form.employee_id }}
+            {% if form.employee_id.errors %}
+            <div class="text-danger small">{{ form.employee_id.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">PPR</label>
+            {{ form.ppr }}
+            {% if form.ppr.errors %}
+            <div class="text-danger small">{{ form.ppr.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">CIN <span class="text-danger">*</span></label>
+            {{ form.cin }}
+            {% if form.cin.errors %}
+            <div class="text-danger small">{{ form.cin.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">First Name <span class="text-danger">*</span></label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}
+            <div class="text-danger small">{{ form.first_name.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Last Name <span class="text-danger">*</span></label>
+            {{ form.last_name }}
+            {% if form.last_name.errors %}
+            <div class="text-danger small">{{ form.last_name.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Email <span class="text-danger">*</span></label>
+            {{ form.email }}
+            {% if form.email.errors %}
+            <div class="text-danger small">{{ form.email.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Phone</label>
+            {{ form.phone }}
+            {% if form.phone.errors %}
+            <div class="text-danger small">{{ form.phone.errors.0 }}</div>
+            {% endif %}
+            <div class="form-text">Format: 0612345678 ou +212612345678</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
+            {{ form.date_of_birth }}
+            {% if form.date_of_birth.errors %}
+            <div class="text-danger small">{{ form.date_of_birth.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">Address</label>
+            {{ form.address }}
+            {% if form.address.errors %}
+            <div class="text-danger small">{{ form.address.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <h5 class="card-title mb-3">Organization</h5>
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label">Direction <span class="text-danger">*</span></label>
+            {{ form.direction }}
+            {% if form.direction.errors %}
+            <div class="text-danger small">{{ form.direction.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Division</label>
+            {{ form.division }}
+            {% if form.division.errors %}
+            <div class="text-danger small">{{ form.division.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Service</label>
+            {{ form.service }}
+            {% if form.service.errors %}
+            <div class="text-danger small">{{ form.service.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Position <span class="text-danger">*</span></label>
+            {{ form.position }}
+            {% if form.position.errors %}
+            <div class="text-danger small">{{ form.position.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <h5 class="card-title mb-3">Grade & Scale</h5>
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label">Grade <span class="text-danger">*</span></label>
+            {{ form.grade }}
+            {% if form.grade.errors %}
+            <div class="text-danger small">{{ form.grade.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-3">
+            <div class="form-check mt-4">
+              {{ form.hors_echelle }}
+              <label class="form-check-label">Hors Échelle</label>
+            </div>
+            {% if form.hors_echelle.errors %}
+            <div class="text-danger small">{{ form.hors_echelle.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Échelle</label>
+            {{ form.echelle }}
+            {% if form.echelle.errors %}
+            <div class="text-danger small">{{ form.echelle.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Échelon</label>
+            {{ form.echelon }}
+            {% if form.echelon.errors %}
+            <div class="text-danger small">{{ form.echelon.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <h5 class="card-title mb-3">Employment</h5>
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label">Contract Type <span class="text-danger">*</span></label>
+            {{ form.contract_type }}
+            {% if form.contract_type.errors %}
+            <div class="text-danger small">{{ form.contract_type.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Hire Date <span class="text-danger">*</span></label>
+            {{ form.hire_date }}
+            {% if form.hire_date.errors %}
+            <div class="text-danger small">{{ form.hire_date.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Titularisation Date</label>
+            {{ form.titularisation_date }}
+            {% if form.titularisation_date.errors %}
+            <div class="text-danger small">{{ form.titularisation_date.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Contract Start Date</label>
+            {{ form.contract_start_date }}
+            {% if form.contract_start_date.errors %}
+            <div class="text-danger small">{{ form.contract_start_date.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Contract End Date</label>
+            {{ form.contract_end_date }}
+            {% if form.contract_end_date.errors %}
+            <div class="text-danger small">{{ form.contract_end_date.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <h5 class="card-title mb-3">Status</h5>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Status <span class="text-danger">*</span></label>
+            {{ form.status }}
+            {% if form.status.errors %}
+            <div class="text-danger small">{{ form.status.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="card-footer d-flex gap-2">
+        <a href="{% if mode == 'edit' %}{% url 'employees:detail' employee.id %}{% else %}{% url 'employees:list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">
+          {% if mode == 'create' %}Create Employee{% else %}Save Changes{% endif %}
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card bg-light">
+      <div class="card-body">
+        <h6 class="card-title">Tips</h6>
+        <ul class="small mb-0">
+          <li>Employee ID, CIN, and Email must be unique</li>
+          <li>Phone format: 0612345678 or +212612345678</li>
+          <li>Dates must be valid; hire date cannot be in the future</li>
+          <li>Either set Échelle (1-11) or check Hors Échelle, not both</li>
+          <li>Fields marked with <span class="text-danger">*</span> are required</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

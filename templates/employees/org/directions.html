@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Directions{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3">Directions</h1>
+  <a class="btn btn-primary" href="{% url 'employees:org_direction_create' %}"><i class="bi bi-plus-circle"></i> Add Direction</a>
+</div>
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Active</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in directions %}
+          <tr>
+            <td>{{ d.code }}</td>
+            <td>{{ d.name }}</td>
+            <td>{% if d.is_active %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-secondary">No</span>{% endif %}</td>
+            <td class="text-end">
+                <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete('{{ d.id }}', '{{ d.name|escapejs }}')">Delete</button>
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'employees:org_direction_edit' d.id %}">Edit</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-center text-muted p-4">No directions.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirm Delete</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to delete <strong id="deleteName"></strong>?
+        <p class="text-danger mt-2 mb-0"><small>This will fail if there are related employees, divisions, or services.</small></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <form id="deleteForm" method="post" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+ </div>
+
+<script>
+function confirmDelete(id, name) {
+  document.getElementById('deleteName').textContent = name;
+  document.getElementById('deleteForm').action = "{% url 'employees:org_directions' %}" + id + "/delete/";
+  new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Roles & Access{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3">Roles & Access Management</h1>
+</div>
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="card mb-3">
+      <div class="card-header bg-primary text-white">
+        <i class="bi bi-shield-lock"></i> Role Management
+      </div>
+      <div class="list-group list-group-flush">
+        <a class="list-group-item list-group-item-action" href="{% url 'roles:function_list' %}">
+          <i class="bi bi-gear-fill"></i> View Functions
+          <small class="text-muted d-block">See all available system functions</small>
+        </a>
+        <a class="list-group-item list-group-item-action" href="{% url 'roles:role_list' %}">
+          <i class="bi bi-shield-check"></i> View Role Permissions
+          <small class="text-muted d-block">See what functions are assigned to each role</small>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card mb-3">
+      <div class="card-header bg-success text-white">
+        <i class="bi bi-person-check"></i> User Management
+      </div>
+      <div class="list-group list-group-flush">
+        <a class="list-group-item list-group-item-action" href="{% url 'roles:users' %}">
+          <i class="bi bi-person-lines-fill"></i> Assign User Roles
+          <small class="text-muted d-block">Assign roles to user accounts</small>
+        </a>
+        <a class="list-group-item list-group-item-action" href="{% url 'roles:groups' %}">
+          <i class="bi bi-diagram-3"></i> Legacy Groups (Django Permissions)
+          <small class="text-muted d-block">Manage Django model permissions</small>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="alert alert-info mt-3">
+  <strong>Quick Start:</strong>
+  <ol class="mb-0">
+    <li>Roles are managed by IT Admin via Django admin or direct database access</li>
+    <li>Use "View Role Permissions" to see what each role can do</li>
+    <li>Assign roles to users via "Assign User Roles"</li>
+    <li>View all available functions in "View Functions"</li>
+  </ol>
+</div>
+{% endblock %}

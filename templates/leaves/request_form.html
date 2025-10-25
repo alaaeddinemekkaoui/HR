@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}New Leave Request{% endblock %}
+{% block content %}
+<h1 class="h3">New Leave Request</h1>
+<form method="post" class="card mt-3">
+  {% csrf_token %}
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-4"><label class="form-label">Type</label>{{ form.leave_type }}</div>
+      <div class="col-md-4"><label class="form-label">Start date</label>{{ form.start_date }}</div>
+      <div class="col-md-4"><label class="form-label">End date</label>{{ form.end_date }}</div>
+      <div class="col-12"><label class="form-label">Reason</label>{{ form.reason }}</div>
+    </div>
+  </div>
+  <div class="card-footer d-flex gap-2">
+    <a class="btn btn-secondary" href="{% url 'leaves:my' %}">Cancel</a>
+    <button class="btn btn-primary">Submit</button>
+  </div>
+</form>
+{% endblock %}

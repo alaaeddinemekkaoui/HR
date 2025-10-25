@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Role Permissions{% endblock %}
+{% block content %}
+<h1 class="h3">Assign Permissions to: {{ role.group.name }}</h1>
+<p class="text-muted">{{ role.description }}</p>
+
+<form method="post" class="mt-3">
+  {% csrf_token %}
+  {% for module, funcs in modules.items %}
+  <div class="card mb-3">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <strong>{{ module|title }}</strong>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input select-all" type="checkbox" id="select_all_{{ module }}" data-module="{{ module }}">
+        <label class="form-check-label" for="select_all_{{ module }}">Select all</label>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        {% for item in funcs %}
+        <div class="col-md-6 mb-2">
+          <div class="form-check">
+              <input class="form-check-input perm-checkbox" type="checkbox" name="functions" value="{{ item.function.id }}" id="func_{{ item.function.id }}" 
+                     data-module="{{ module }}" {% if item.assigned %}checked{% endif %}>
+            <label class="form-check-label" for="func_{{ item.function.id }}">
+              <strong>{{ item.function.name }}</strong>
+              <br><small class="text-muted">{{ item.function.description }}</small>
+            </label>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="alert alert-warning">No functions available. Run <code>python manage.py seed_functions</code> to initialize.</div>
+  {% endfor %}
+
+  <div class="mt-3 d-flex gap-2">
+    <button class="btn btn-primary">Save</button>
+    <a class="btn btn-secondary" href="{% url 'roles:role_list' %}">Cancel</a>
+  </div>
+  </form>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.select-all').forEach(function(cb) {
+      cb.addEventListener('change', function() {
+        const module = this.dataset.module;
+        const checked = this.checked;
+        document.querySelectorAll('.perm-checkbox[data-module="' + module + '"]').forEach(function(pc) {
+          pc.checked = checked;
+        });
+      });
+    });
+  });
+</script>
+{% endblock %}

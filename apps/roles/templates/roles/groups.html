@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load roles_extras %}
+{% block title %}Groups{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3">Groups</h1>
+  <a class="btn btn-primary" href="{% url 'roles:group_create' %}"><i class="bi bi-plus-circle"></i> Create Group</a>
+  </div>
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Employee permissions</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for g in groups %}
+      {% with p=perms_map|get_item:g.id %}
+      <tr>
+        <td>
+          {{ g.name }}
+          {% if g.name == 'IT Admin' or g.role_definition and g.role_definition.is_system_role %}
+            <span class="badge bg-primary">System</span>
+          {% endif %}
+        </td>
+        <td>
+          <span class="badge bg-secondary">view: {% if p and 'view_employee' in p %}yes{% else %}no{% endif %}</span>
+          <span class="badge bg-secondary">add: {% if p and 'add_employee' in p %}yes{% else %}no{% endif %}</span>
+          <span class="badge bg-secondary">modify: {% if p and 'change_employee' in p %}yes{% else %}no{% endif %}</span>
+          <span class="badge bg-secondary">delete: {% if p and 'delete_employee' in p %}yes{% else %}no{% endif %}</span>
+        </td>
+        <td class="text-end">
+          {% if g.name == 'IT Admin' or g.role_definition and g.role_definition.is_system_role %}
+            <button class="btn btn-sm btn-outline-secondary" disabled title="System group cannot be edited or deleted">Edit</button>
+            <button class="btn btn-sm btn-outline-danger" disabled>Delete</button>
+          {% else %}
+            {% if g.role_definition %}
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'roles:role_permissions' g.role_definition.id %}">Functions</a>
+            {% endif %}
+            <a class="btn btn-sm btn-outline-secondary" href="{% url 'roles:group_edit' g.id %}">Django Perms</a>
+            <a class="btn btn-sm btn-outline-danger" href="{% url 'roles:group_delete' g.id %}">Delete</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endwith %}
+      {% empty %}
+      <tr><td colspan="3" class="text-center text-muted">No groups.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

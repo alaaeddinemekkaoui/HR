@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}{{ mode|title }} Service{% endblock %}
+{% block content %}
+<h1 class="h3">{% if mode == 'create' %}Create{% else %}Edit{% endif %} Service</h1>
+<form method="post" class="card mt-3">
+  {% csrf_token %}
+  <div class="card-body">
+    <div class="alert alert-info">Link a service either to a Direction or to a Division (not both).</div>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">Direction (if no division)</label>
+        {{ form.direction }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Division (alternative to direction)</label>
+        {{ form.division }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Code</label>
+        {{ form.code }}
+      </div>
+      <div class="col-md-8">
+        <label class="form-label">Name</label>
+        {{ form.name }}
+      </div>
+      <div class="col-12">
+        <label class="form-label">Description</label>
+        {{ form.description }}
+      </div>
+      <div class="col-12 form-check">
+        {{ form.is_active }} <label class="form-check-label">Active</label>
+      </div>
+    </div>
+  </div>
+  <div class="card-footer d-flex gap-2">
+    <a class="btn btn-secondary" href="{% url 'employees:org_services' %}">Cancel</a>
+    <button class="btn btn-primary">Save</button>
+  </div>
+</form>
+{% endblock %}
