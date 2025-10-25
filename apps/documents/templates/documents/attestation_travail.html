@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Attestation de Travail{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 900px;">
+  <div class="d-print-none d-flex justify-content-end mb-3">
+    <button class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimer</button>
+  </div>
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-5">
+      <div class="text-center mb-4">
+        <img src="{% static 'iav.png' %}" alt="IAV Hassan II" style="height: 50px;"/>
+        <h5 class="mt-2 mb-0">Institut Agronomique et Vétérinaire Hassan II</h5>
+      </div>
+
+      <h3 class="text-center mb-4">Attestation de Travail</h3>
+
+      <p>Nous soussignés, Institut Agronomique et Vétérinaire Hassan II, attestons que :</p>
+      <p class="ms-3">
+        <strong>{{ employee.full_name }}</strong>, titulaire de la CIN <strong>{{ employee.cin }}</strong>,
+        occupe le poste de <strong>{{ employee.position.name }}</strong> au sein de
+        <strong>{{ employee.organizational_path }}</strong>, et ce depuis le <strong>{{ employee.hire_date }}</strong>.
+      </p>
+
+      <p>La présente attestation est délivrée à l'intéressé(e) pour servir et valoir ce que de droit.</p>
+
+      <div class="row mt-5">
+        <div class="col-6"></div>
+        <div class="col-6 text-end">
+          <div>Fait à Rabat, le {{ today }}</div>
+          <div class="mt-5">
+            <div class="fw-semibold">Le Responsable</div>
+            <div class="text-muted"><small>Signature et cachet</small></div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="mt-5"/>
+      <div class="text-muted small">Cette attestation a été générée par le système RH de l'IAV Hassan II.</div>
+    </div>
+  </div>
+</div>
+<style>
+@media print {
+  nav, .sidebar, .d-print-none { display: none !important; }
+  body { background: white !important; }
+  main { padding: 0 !important; }
+}
+</style>
+{% endblock %}

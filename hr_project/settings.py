@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     'apps.admin_dashboard',
     'apps.leaves',
     'apps.notifications',
+    'apps.documents',
 ]
 
 MIDDLEWARE = [

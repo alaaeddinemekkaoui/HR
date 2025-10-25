@@ -12,4 +12,5 @@ urlpatterns = [
     path('roles/', include('apps.roles.urls', namespace='roles')),
     path('leaves/', include('apps.leaves.urls', namespace='leaves')),
     path('notifications/', include('apps.notifications.urls', namespace='notifications')),
+    path('documents/', include('apps.documents.urls', namespace='documents')),
 ]

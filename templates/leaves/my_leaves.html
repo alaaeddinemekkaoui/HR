@@ -82,6 +82,9 @@
               <a href="#" class="btn btn-sm btn-outline-primary" title="View Details">
                 <i class="bi bi-eye"></i>
               </a>
+              <a href="{% url 'documents:decision_conge' r.id %}" class="btn btn-sm btn-outline-secondary" title="Décision de congé">
+                <i class="bi bi-file-earmark-text"></i>
+              </a>
               {% if r.status == 'pending' %}
               <form method="post" action="{% url 'leaves:request_delete' r.id %}" class="d-inline">
                 {% csrf_token %}

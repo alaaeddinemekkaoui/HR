@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}Attestation de Salaire{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <h1 class="h4 mb-1">Attestation de Salaire</h1>
+  <p class="text-muted">Renseignez les informations de salaire pour générer l'attestation.</p>
+</div>
+
+<div class="card border-0 shadow-sm" style="max-width: 640px;">
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label">Employé</label>
+        <input type="text" class="form-control" value="{{ employee.full_name }} ({{ employee.cin }})" disabled />
+      </div>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Salaire brut (MAD)</label>
+          <input type="number" step="0.01" name="gross" class="form-control" required />
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Salaire net (MAD)</label>
+          <input type="number" step="0.01" name="net" class="form-control" required />
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Générer</button>
+        <a href="/employees/{{ employee.id }}/" class="btn btn-secondary">Annuler</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

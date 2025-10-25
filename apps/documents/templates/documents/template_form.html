@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+{% block title %}{% if mode == 'edit' %}Modifier modèle{% else %}Nouveau modèle{% endif %}{% endblock %}
+{% block content %}
+<div class="mb-3 d-flex justify-content-between align-items-center">
+  <h1 class="h4 mb-0">{% if mode == 'edit' %}Modifier modèle{% else %}Nouveau modèle{% endif %}</h1>
+  <a href="{% url 'documents:template_list' %}" class="btn btn-secondary">Annuler</a>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">Nom</label>
+            {{ form.name }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Slug</label>
+            {{ form.slug }}
+            <div class="form-text">Utilisé dans l'URL (ex: attestation-personnalisee)</div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-check mb-3">
+                {{ form.hr_only }}
+                <label class="form-check-label">RH seulement</label>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-check mb-3">
+                {{ form.is_active }}
+                <label class="form-check-label">Actif</label>
+              </div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Contenu (HTML)</label>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <div class="small text-muted">Éditez votre contenu HTML ci-dessous.</div>
+                  <div class="d-flex align-items-center gap-2">
+                    <button type="button" id="insertSampleDoc" class="btn btn-sm btn-outline-primary">
+                      <i class="bi bi-file-earmark-text"></i> Insérer un modèle d'exemple
+                    </button>
+                    <div class="dropdown">
+                      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Insérer une variable
+                      </button>
+                      <ul class="dropdown-menu dropdown-menu-end small">
+                        <li><h6 class="dropdown-header">Raccourcis simples</h6></li>
+                        <li><a class="dropdown-item insert-token" data-token="[name]" href="#">[name]</a></li>
+                        <li><a class="dropdown-item insert-token" data-token="[cin]" href="#">[cin]</a></li>
+                        <li><a class="dropdown-item insert-token" data-token="[position]" href="#">[position]</a></li>
+                        <li><a class="dropdown-item insert-token" data-token="[organization]" href="#">[organization]</a></li>
+                        <li><a class="dropdown-item insert-token" data-token="[grade]" href="#">[grade]</a></li>
+                        <li><a class="dropdown-item insert-token" data-token="[today]" href="#">[today]</a></li>
+                        <li><a class="dropdown-item insert-token" data-token="[supervisor_name]" href="#">[supervisor_name]</a></li>
+                        <li><a class="dropdown-item insert-token" data-token="[supervisor_position]" href="#">[supervisor_position]</a></li>
+                        <li><hr class="dropdown-divider" /></li>
+                        <li><h6 class="dropdown-header">Variables Django</h6></li>
+                        <li><a class="dropdown-item insert-token" data-token="{{ employee.full_name }}" href="#">{{ employee.full_name }}</a></li>
+                        <li><a class="dropdown-item insert-token" data-token="{{ employee.cin }}" href="#">{{ employee.cin }}</a></li>
+                        <li><a class="dropdown-item insert-token" data-token="{{ employee.position.name }}" href="#">{{ employee.position.name }}</a></li>
+                        <li><a class="dropdown-item insert-token" data-token="{{ employee.organizational_path }}" href="#">{{ employee.organizational_path }}</a></li>
+                        <li><a class="dropdown-item insert-token" data-token="{{ employee.grade_display }}" href="#">{{ employee.grade_display }}</a></li>
+                        <li><a class="dropdown-item insert-token" data-token="{{ today }}" href="#">{{ today }}</a></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                {{ form.content }}
+                <div class="form-text">Vous pouvez utiliser des variables simples (remplacement direct): [name], [cin], [position], [organization], [grade], [today], [supervisor_name], [supervisor_position].</div>
+                <div class="form-text">
+                  {% verbatim %}
+                  Ou des variables Django: {{ employee.full_name }}, {{ employee.cin }}, {{ employee.position.name }}, {{ employee.organizational_path }}, {{ today }}.
+                  {% endverbatim %}
+                </div>
+
+                <div class="mt-3">
+                  <a class="text-decoration-none" data-bs-toggle="collapse" href="#sampleData" role="button" aria-expanded="false" aria-controls="sampleData">
+                    <i class="bi bi-sliders"></i> Données d'exemple pour l'aperçu
+                  </a>
+                  <div class="collapse mt-2" id="sampleData">
+                    <div class="row g-2">
+                      <div class="col-md-6">
+                        <label class="form-label small text-muted">Nom</label>
+                        <input type="text" class="form-control form-control-sm" id="sample_name" value="Nom Exemple" />
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label small text-muted">CIN</label>
+                        <input type="text" class="form-control form-control-sm" id="sample_cin" value="AA123456" />
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label small text-muted">Poste</label>
+                        <input type="text" class="form-control form-control-sm" id="sample_position" value="Développeur" />
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label small text-muted">Organisation</label>
+                        <input type="text" class="form-control form-control-sm" id="sample_org" value="IAV Hassan II" />
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label small text-muted">Grade</label>
+                        <input type="text" class="form-control form-control-sm" id="sample_grade" value="A" />
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label small text-muted">Nom du supérieur</label>
+                        <input type="text" class="form-control form-control-sm" id="sample_sup_name" value="Chef Direct" />
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label small text-muted">Poste du supérieur</label>
+                        <input type="text" class="form-control form-control-sm" id="sample_sup_pos" value="Chef de service" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="mb-0">Aperçu en temps réel</h6>
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="togglePrintStyles" checked>
+                    <label class="form-check-label small" for="togglePrintStyles">Styles d'impression</label>
+                  </div>
+                </div>
+                <div id="livePreview" class="border rounded p-3 bg-white" style="min-height: 360px; height:100%; overflow:auto;"></div>
+              </div>
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+            <a href="{% url 'documents:template_list' %}" class="btn btn-outline-secondary">Retour</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom">
+        <h6 class="mb-0"><i class="bi bi-info-circle text-primary"></i> Variables disponibles</h6>
+      </div>
+      <div class="card-body small text-muted">
+        <ul class="mb-0">
+          <li>employee.full_name</li>
+          <li>employee.cin</li>
+          <li>employee.position.name</li>
+          <li>employee.organizational_path</li>
+          <li>employee.grade_display</li>
+          <li>today</li>
+          <li>supervisor.full_name (si disponible)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% verbatim %}
+<script>
+  (function() {
+    const textarea = document.getElementById('id_content');
+    const preview = document.getElementById('livePreview');
+    const togglePrint = document.getElementById('togglePrintStyles');
+    const btnSample = document.getElementById('insertSampleDoc');
+
+    const sample = {
+      get name() { return document.getElementById('sample_name')?.value || 'Nom Exemple'; },
+      get cin() { return document.getElementById('sample_cin')?.value || 'AA123456'; },
+      get position() { return document.getElementById('sample_position')?.value || 'Développeur'; },
+      get org() { return document.getElementById('sample_org')?.value || 'IAV Hassan II'; },
+      get grade() { return document.getElementById('sample_grade')?.value || 'A'; },
+      get supName() { return document.getElementById('sample_sup_name')?.value || 'Chef Direct'; },
+      get supPos() { return document.getElementById('sample_sup_pos')?.value || 'Chef de service'; }
+    };
+
+    function formatToday() {
+      try {
+        const d = new Date();
+        return d.toLocaleDateString('fr-MA', { year: 'numeric', month: 'long', day: 'numeric' });
+      } catch(_) { return new Date().toISOString().slice(0,10); }
+    }
+
+    function preprocess(html) {
+      if (!html) return '';
+      // Simple tokens like [name]
+      const map = new Map([
+        ['[name]', sample.name],
+        ['[cin]', sample.cin],
+        ['[position]', sample.position],
+        ['[organization]', sample.org],
+        ['[grade]', sample.grade],
+        ['[today]', formatToday()],
+        ['[supervisor_name]', sample.supName],
+        ['[supervisor_position]', sample.supPos],
+      ]);
+      for (const [k,v] of map.entries()) {
+        html = html.split(k).join(escapeHtml(v));
+      }
+
+      // Basic Django-like variables
+      const replacements = [
+        { re: /\{\{\s*employee\.full_name\s*\}\}/g, val: () => sample.name },
+        { re: /\{\{\s*employee\.cin\s*\}\}/g, val: () => sample.cin },
+        { re: /\{\{\s*employee\.position\.name\s*\}\}/g, val: () => sample.position },
+        { re: /\{\{\s*employee\.organizational_path\s*\}\}/g, val: () => sample.org },
+        { re: /\{\{\s*employee\.(grade|grade_display)\s*\}\}/g, val: () => sample.grade },
+        { re: /\{\{\s*today\s*\}\}/g, val: () => formatToday() },
+        { re: /\{\{\s*supervisor(_name|\.full_name)?\s*\}\}/g, val: () => sample.supName },
+        { re: /\{\{\s*supervisor_position\s*\}\}/g, val: () => sample.supPos },
+      ];
+      for (const {re, val} of replacements) {
+        html = html.replace(re, escapeHtml(val()));
+      }
+
+      // Optionally strip Django tags so preview looks clean
+      html = html.replace(/\{%.+?%\}/gs, '');
+      return html;
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function withStyles(inner) {
+      if (!togglePrint?.checked) return inner;
+      const styles = `
+        <style>
+          @media print { body { margin: 2cm; } }
+          body { font-family: system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif; line-height:1.6; color:#212529; }
+          h1,h2,h3,h4,h5 { margin-top: 1rem; }
+          p { margin: .25rem 0; }
+        </style>`;
+      return styles + inner;
+    }
+
+    function render() {
+      const raw = textarea?.value || '';
+      const processed = preprocess(raw);
+      preview.innerHTML = withStyles(processed);
+    }
+
+    // Insert variable at cursor
+    function insertAtCursor(textarea, text) {
+      if (!textarea) return;
+      const start = textarea.selectionStart || 0;
+      const end = textarea.selectionEnd || 0;
+      const before = textarea.value.substring(0, start);
+      const after = textarea.value.substring(end);
+      textarea.value = before + text + after;
+      const pos = start + text.length;
+      textarea.setSelectionRange(pos, pos);
+      textarea.focus();
+      render();
+    }
+
+    function sampleDocHtml() {
+      return `
+<!-- En-tête avec logo IAV -->
+<div style="text-align:center; margin-bottom: 24px;">
+  <img src="/static/iav.png" alt="IAV" style="height:80px; display:block; margin:0 auto 8px;" />
+  <div style="font-size:14px; letter-spacing:.5px; color:#6c757d;">Institut Agronomique et Vétérinaire Hassan II</div>
+  <hr style="margin:12px auto; width:120px; opacity:.25;" />
+  <h2 style="margin:0;">Attestation de Travail</h2>
+  <div style="font-size:12px; color:#6c757d;">Réf: AT-[cin]-${new Date().getFullYear()}</div>
+</div>
+
+<!-- Corps du document -->
+<p>Nous soussignés, <strong>IAV Hassan II</strong>, attestons que <strong>[name]</strong> (CIN <strong>[cin]</strong>) occupe le poste de <strong>[position]</strong> au sein de l'organisation <strong>[organization]</strong>.</p>
+
+<p>Cette attestation est délivrée à l'intéressé(e) pour servir et valoir ce que de droit.</p>
+
+<p style="margin-top:16px;">Fait à Rabat, le <strong>[today]</strong>.</p>
+
+<!-- Signature -->
+<div style="display:flex; justify-content:space-between; margin-top:40px;">
+  <div>
+    <div style="font-weight:600;">[supervisor_name]</div>
+    <div style="color:#6c757d;">[supervisor_position]</div>
+  </div>
+  <div style="text-align:right;">
+    <div style="font-weight:600;">Le Directeur</div>
+    <div style="color:#6c757d;">Signature</div>
+  </div>
+  
+</div>
+
+<!-- Notes: vous pouvez aussi utiliser des variables Django si besoin: -->
+<!-- Exemple: {{ employee.full_name }}, {{ employee.cin }}, {{ employee.position.name }}, {{ employee.organizational_path }}, {{ today }} -->
+`;
+    }
+
+    document.addEventListener('click', function(e) {
+      const t = e.target;
+      if (t?.classList?.contains('insert-token')) {
+        e.preventDefault();
+        const token = t.getAttribute('data-token');
+        insertAtCursor(textarea, token);
+      }
+    });
+
+    btnSample?.addEventListener('click', function() {
+      const html = sampleDocHtml();
+      const hasContent = (textarea?.value || '').trim().length > 0;
+      if (hasContent) {
+        if (!confirm("Remplacer le contenu existant par le modèle d'exemple ?")) {
+          return;
+        }
+      }
+      textarea.value = html;
+      textarea.focus();
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+      render();
+    });
+
+    ['input','change','keyup'].forEach(evt => {
+      textarea?.addEventListener(evt, render);
+      document.getElementById('sample_name')?.addEventListener(evt, render);
+      document.getElementById('sample_cin')?.addEventListener(evt, render);
+      document.getElementById('sample_position')?.addEventListener(evt, render);
+      document.getElementById('sample_org')?.addEventListener(evt, render);
+      document.getElementById('sample_grade')?.addEventListener(evt, render);
+      document.getElementById('sample_sup_name')?.addEventListener(evt, render);
+      document.getElementById('sample_sup_pos')?.addEventListener(evt, render);
+    });
+
+    togglePrint?.addEventListener('change', render);
+
+    // Initial render after page loads
+    window.addEventListener('DOMContentLoaded', render);
+    // Also render once immediately (in case DOMContentLoaded already fired)
+    setTimeout(render, 0);
+  })();
+</script>
+{% endverbatim %}
+{% endblock %}

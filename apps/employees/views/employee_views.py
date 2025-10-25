@@ -121,7 +121,6 @@ class EmployeeListView(View):
         # Scope restriction for regular users (see only coworkers in the same direct assignment)
         if not request.user.is_superuser and not request.user.groups.filter(name__in=['HR Admin', 'IT Admin']).exists():
             emp = getattr(request.user, 'employee_profile', None)
-            from django.db.models import Q
             scope_q = Q(user=request.user)  # always include self
             if emp:
                 if emp.service_id:
@@ -136,15 +135,33 @@ class EmployeeListView(View):
             employees = employees.filter(scope_q)
         
         # Search functionality (support both 'search' and 'q' parameters)
-        search_query = request.GET.get('search', '') or request.GET.get('q', '')
+        search_query = (request.GET.get('search') or request.GET.get('q') or '').strip()
         if search_query:
-            employees = employees.filter(
-                Q(first_name__icontains=search_query) |
-                Q(last_name__icontains=search_query) |
-                Q(email__icontains=search_query) |
-                Q(employee_id__icontains=search_query) |
-                Q(cin__icontains=search_query)
-            )
+            terms = [t for t in search_query.split() if t]
+            # Build a combined Q: AND across terms, OR across fields within each term
+            base_q = Q()
+            initialized = False
+            for term in terms:
+                term_q = (
+                    Q(first_name__icontains=term) |
+                    Q(last_name__icontains=term) |
+                    Q(email__icontains=term) |
+                    Q(employee_id__icontains=term) |
+                    Q(ppr__icontains=term) |
+                    Q(cin__icontains=term) |
+                    Q(phone__icontains=term) |
+                    Q(position__name__icontains=term) |
+                    Q(grade__name__icontains=term) |
+                    Q(direction__name__icontains=term) |
+                    Q(division__name__icontains=term) |
+                    Q(service__name__icontains=term)
+                )
+                base_q = term_q if not initialized else (base_q & term_q)
+                initialized = True
+            # Add exact match boost for numeric-only queries
+            if search_query.isdigit():
+                base_q = base_q | Q(employee_id=search_query) | Q(ppr=search_query)
+            employees = employees.filter(base_q)
         
         # Filter by status
         status_filter = request.GET.get('status', '')
@@ -225,7 +242,6 @@ class EmployeeDetailView(View):
             if my_emp and my_emp.id == employee.id:
                 allowed = True
             else:
-                from django.db.models import Q
                 scope_q = Q()
                 if my_emp:
                     if my_emp.service_id:

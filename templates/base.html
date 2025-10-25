@@ -191,6 +191,21 @@
           </div>
         </div>
         
+        <!-- Documents Section -->
+        <div class="sidebar-section">
+          <div class="sidebar-section-header" data-bs-toggle="collapse" data-bs-target="#documentsSection">
+            <i class="bi bi-file-earmark-text"></i>
+            <span>Documents</span>
+            <i class="bi bi-chevron-down ms-auto"></i>
+          </div>
+          <div class="collapse show" id="documentsSection">
+            <a href="/documents/" class="sidebar-item {% if '/documents' in request.path %}active{% endif %}">
+              <i class="bi bi-files"></i>
+              <span>Demande des documents</span>
+            </a>
+          </div>
+        </div>
+
         {% if request.user.is_superuser or request.user|has_group:'IT Admin' %}
         <!-- Administration Section -->
         <div class="sidebar-section">
@@ -241,5 +256,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  {% block extra_js %}{% endblock %}
 </body>
 </html>

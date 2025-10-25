@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Décision de Congé{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 900px;">
+  <div class="d-print-none d-flex justify-content-end mb-3">
+    <button class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimer</button>
+  </div>
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-5">
+      <div class="text-center mb-4">
+        <img src="{% static 'iav.png' %}" alt="IAV Hassan II" style="height: 50px;"/>
+        <h5 class="mt-2 mb-0">Institut Agronomique et Vétérinaire Hassan II</h5>
+      </div>
+
+      <h3 class="text-center mb-4">Décision de Congé</h3>
+
+      <p>Après examen de la demande de congé de <strong>{{ employee.full_name }}</strong>, CIN <strong>{{ employee.cin }}</strong>,
+      exerçant la fonction de <strong>{{ employee.position.name }}</strong> au sein de <strong>{{ employee.organizational_path }}</strong>,</p>
+
+      <p>Il a été décidé ce qui suit :</p>
+      <ul>
+        <li>Type de congé : <strong>{{ leave.leave_type.name }}</strong></li>
+        <li>Période : <strong>du {{ leave.start_date }} au {{ leave.end_date }}</strong> ({{ leave.days }} jours ouvrables)</li>
+        <li>Statut de la décision : 
+          {% if leave.status == 'approved' %}
+            <span class="badge bg-success">Approuvée</span>
+          {% elif leave.status == 'rejected' %}
+            <span class="badge bg-danger">Rejetée</span>
+          {% else %}
+            <span class="badge bg-warning text-dark">En attente</span>
+          {% endif %}
+        </li>
+      </ul>
+
+      <p>La présente décision est établie pour servir et valoir ce que de droit.</p>
+
+      <div class="row mt-5">
+        <div class="col-6">
+          {% if supervisor %}
+            <div class="fw-semibold">Visa du supérieur hiérarchique</div>
+            <div class="mt-1">{{ supervisor.full_name }}</div>
+            <div class="text-muted">{{ supervisor.position.name }}</div>
+          {% else %}
+            <div class="fw-semibold">Visa du supérieur hiérarchique</div>
+            <div class="text-muted"><small>Non désigné</small></div>
+          {% endif %}
+        </div>
+        <div class="col-6 text-end">
+          <div>Fait à Rabat, le {{ today }}</div>
+          <div class="mt-5">
+            <div class="fw-semibold">Le Responsable</div>
+            <div class="text-muted"><small>Signature et cachet</small></div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="mt-5"/>
+      <div class="text-muted small">Document généré par le système RH de l'IAV Hassan II.</div>
+    </div>
+  </div>
+</div>
+<style>
+@media print {
+  nav, .sidebar, .d-print-none { display: none !important; }
+  body { background: white !important; }
+  main { padding: 0 !important; }
+}
+</style>
+{% endblock %}
