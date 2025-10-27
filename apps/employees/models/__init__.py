@@ -2,6 +2,8 @@ from .employee import (
     Direction,
     Division,
     Service,
+    Departement,
+    Filiere,
     Grade,
     Position,
     Employee,

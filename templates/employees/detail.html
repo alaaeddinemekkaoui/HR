@@ -38,17 +38,6 @@
           <i class="bi bi-pencil"></i> Edit
         </a>
         {% endif %}
-        <!-- Documents shortcuts -->
-        <div class="btn-group">
-          <a href="{% url 'documents:attestation_travail' employee.id %}" class="btn btn-outline-secondary">
-            <i class="bi bi-file-earmark-text"></i> Attestation de travail
-          </a>
-          {% if request.user.is_superuser or request.user|has_group:'HR Admin' or request.user|has_group:'HR' or request.user|has_group:'IT Admin' or request.user.employee_profile and request.user.employee_profile.id == employee.id %}
-          <a href="{% url 'documents:attestation_salaire' employee.id %}" class="btn btn-outline-secondary">
-            <i class="bi bi-currency-exchange"></i> Attestation de salaire
-          </a>
-          {% endif %}
-        </div>
       </div>
     </div>
   </div>
@@ -300,6 +289,123 @@
   </div>
 </div>
 
+<!-- Leave Balances Section (IT Admin Only) -->
+{% if request.user.is_superuser or request.user|has_group:'IT Admin' %}
+<div class="card mb-3 border-0 shadow-sm" id="leave-balances">
+  <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+    <h6 class="mb-0"><i class="bi bi-calendar-event text-primary"></i> Soldes de Congés</h6>
+  </div>
+  <div class="card-body">
+    {% if employee.leave_balances.all %}
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Année</th>
+            <th>Ouverture</th>
+            <th>Acquis</th>
+            <th>Utilisé</th>
+            <th>Solde</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for balance in employee.leave_balances.all %}
+          <tr>
+            <td>{{ balance.leave_type.name }}</td>
+            <td>{{ balance.year }}</td>
+            <td>{{ balance.opening }}</td>
+            <td>{{ balance.accrued }}</td>
+            <td>{{ balance.used }}</td>
+            <td><strong>{{ balance.closing }}</strong></td>
+            <td>
+              <a href="{% url 'leaves:balance_adjust' balance.id %}" class="btn btn-sm btn-outline-primary" title="Modifier le solde">
+                <i class="bi bi-pencil"></i> Modifier
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">Aucun solde de congé disponible.</p>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Employment History Section -->
+<div class="card mb-3 border-0 shadow-sm">
+  <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+    <h6 class="mb-0"><i class="bi bi-clock-history text-primary"></i> Historique d'Emploi</h6>
+    <a href="{% url 'employees:history_list' employee.pk %}" class="btn btn-sm btn-outline-primary">
+      <i class="bi bi-eye"></i> Voir Tout
+    </a>
+  </div>
+  <div class="card-body">
+    {% if request.user.is_superuser or request.user|has_group:'IT Admin' or request.user|has_group:'HR Admin' %}
+    <div class="mb-3">
+      <div class="btn-group btn-group-sm" role="group">
+        <a href="{% url 'employees:grade_change' employee.pk %}" class="btn btn-outline-info">
+          <i class="bi bi-graph-up"></i> Changement de Grade
+        </a>
+        <a href="{% url 'employees:contract_create' employee.pk %}" class="btn btn-outline-success">
+          <i class="bi bi-file-earmark-text"></i> Contrat
+        </a>
+        <a href="{% url 'employees:retirement_create' employee.pk %}" class="btn btn-outline-secondary">
+          <i class="bi bi-person-check"></i> Retraite
+        </a>
+      </div>
+    </div>
+    {% endif %}
+    
+    {% with history_entries=employee.employment_history.all|slice:":5" %}
+    {% if history_entries %}
+    <div class="list-group list-group-flush">
+      {% for entry in history_entries %}
+      <div class="list-group-item px-0">
+        <div class="d-flex justify-content-between align-items-start">
+          <div class="flex-grow-1">
+            <div class="d-flex align-items-center gap-2 mb-1">
+              {% if entry.change_type == 'grade' %}
+                <i class="bi bi-star-fill text-warning"></i>
+              {% elif entry.change_type == 'echelle' %}
+                <i class="bi bi-bar-chart-steps text-info"></i>
+              {% elif entry.change_type == 'echelon' %}
+                <i class="bi bi-arrow-up-circle text-success"></i>
+              {% elif entry.change_type == 'contract' %}
+                <i class="bi bi-file-earmark-check text-primary"></i>
+              {% elif entry.change_type == 'contract_renewal' %}
+                <i class="bi bi-arrow-repeat text-success"></i>
+              {% elif entry.change_type == 'retirement' %}
+                <i class="bi bi-person-dash text-secondary"></i>
+              {% else %}
+                <i class="bi bi-circle-fill text-muted" style="font-size: 0.5rem;"></i>
+              {% endif %}
+              <strong>{{ entry.get_change_type_display }}</strong>
+              {% if entry.is_approved %}
+                <span class="badge bg-success">Approuvé</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">En Attente</span>
+              {% endif %}
+            </div>
+            <p class="mb-1 text-muted small">{{ entry.change_summary }}</p>
+            <small class="text-muted">{{ entry.effective_date|date:"d/m/Y" }}</small>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">Aucune entrée d'historique disponible.</p>
+    {% endif %}
+    {% endwith %}
+  </div>
+</div>
+
+
 <!-- Modals -->
 
 <!-- Create Account Modal -->
@@ -418,32 +524,60 @@
             </label>
           </div>
           
+          {% if request.user.is_superuser or request.user|has_group:'IT Admin' %}
           <hr>
-          <p class="text-muted small mb-2">Leave password fields empty to keep current password</p>
+          <h6 class="text-muted">Changer le mot de passe (IT Admin uniquement)</h6>
+          <p class="text-muted small mb-2">Laissez les champs vides pour conserver le mot de passe actuel</p>
           
           <div class="mb-3">
-            <label for="new_password" class="form-label">New Password</label>
+            <label for="new_password" class="form-label">Nouveau mot de passe</label>
             <input 
               type="password" 
               name="new_password" 
               id="new_password" 
               class="form-control" 
-              placeholder="Enter new password (optional)"
+              placeholder="Nouveau mot de passe (optionnel)"
               autocomplete="new-password"
             >
           </div>
           
           <div class="mb-3">
-            <label for="new_password_confirm" class="form-label">Confirm New Password</label>
+            <label for="new_password_confirm" class="form-label">Confirmer le mot de passe</label>
             <input 
               type="password" 
               name="new_password_confirm" 
               id="new_password_confirm" 
               class="form-control" 
-              placeholder="Confirm new password"
+              placeholder="Confirmer le mot de passe"
               autocomplete="new-password"
             >
           </div>
+          
+          <hr>
+          <h6 class="text-muted">Groupes / Rôles (IT Admin uniquement)</h6>
+          <div class="mb-3">
+            {% load roles_extras %}
+            {% for group in available_groups %}
+            <div class="form-check">
+              <input 
+                class="form-check-input" 
+                type="checkbox" 
+                name="groups" 
+                value="{{ group.id }}"
+                id="group_{{ group.id }}"
+                {% if employee.user.groups.all|contains_group:group.name %}checked{% endif %}
+              >
+              <label class="form-check-label" for="group_{{ group.id }}">
+                {{ group.name }}
+              </label>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="alert alert-info small mt-3">
+            <i class="bi bi-info-circle"></i> Seuls les administrateurs IT peuvent modifier le mot de passe et les permissions.
+          </div>
+          {% endif %}
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>

@@ -72,6 +72,57 @@ class Service(models.Model):
             raise ValidationError('A service must be linked to either a direction or a division (but not both).')
 
 
+class Departement(models.Model):
+    """Département - Academic department (can belong to Direction, Division, or Service)"""
+    direction = models.ForeignKey(Direction, on_delete=models.PROTECT, related_name='departements', null=True, blank=True)
+    division = models.ForeignKey('Division', on_delete=models.PROTECT, related_name='departements', null=True, blank=True)
+    service = models.ForeignKey('Service', on_delete=models.PROTECT, related_name='departements', null=True, blank=True)
+    name = models.CharField(max_length=200)
+    code = models.CharField(max_length=20, unique=True)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = 'Département'
+        verbose_name_plural = 'Départements'
+    
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        # At least one organizational unit must be set
+        if not any([self.direction, self.division, self.service]):
+            raise ValidationError("Département doit appartenir à au moins une Direction, Division ou Service")
+
+    def __str__(self):
+        if self.service:
+            return f"{self.service.code} - {self.name}"
+        elif self.division:
+            return f"{self.division.code} - {self.name}"
+        elif self.direction:
+            return f"{self.direction.code} - {self.name}"
+        return self.name
+
+
+class Filiere(models.Model):
+    """Filière (program/track) within a Département"""
+    departement = models.ForeignKey(Departement, on_delete=models.PROTECT, related_name='filieres')
+    name = models.CharField(max_length=200)
+    code = models.CharField(max_length=20)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['departement', 'name']
+        unique_together = [['departement', 'code']]
+        verbose_name = 'Filière'
+        verbose_name_plural = 'Filières'
+
+    def __str__(self):
+        return f"{self.departement.name} - {self.name}"
+
+
 class Grade(models.Model):
     """Public sector grade (e.g., Ingénieur, Ingénieur Principal, Technicien)"""
     CATEGORY_CHOICES = [
@@ -100,9 +151,14 @@ class Grade(models.Model):
 class Position(models.Model):
     """Position/Function (e.g., Chef de Service, Chef de Division, Ingénieur, Secrétaire)"""
     POSITION_TYPE_CHOICES = [
+        ('directeur', 'Directeur'),
         ('chef_direction', 'Chef de Direction'),
+        ('chef_adjoint', 'Chef Adjoint'),
         ('chef_division', 'Chef de Division'),
         ('chef_service', 'Chef de Service'),
+        ('chef_departement', 'Chef de Département'),
+        ('chef_filiere', 'Chef de Filière'),
+        ('inspecteur', 'Inspecteur'),
         ('employee', 'Employé'),
     ]
     
@@ -162,6 +218,8 @@ class Employee(models.Model):
     direction = models.ForeignKey(Direction, on_delete=models.PROTECT, related_name='employees', verbose_name='Direction')
     division = models.ForeignKey(Division, on_delete=models.PROTECT, related_name='employees', null=True, blank=True, verbose_name='Division')
     service = models.ForeignKey(Service, on_delete=models.PROTECT, related_name='employees', null=True, blank=True, verbose_name='Service')
+    departement = models.ForeignKey('Departement', on_delete=models.PROTECT, related_name='employees', null=True, blank=True, verbose_name='Département')
+    filiere = models.ForeignKey('Filiere', on_delete=models.PROTECT, related_name='employees', null=True, blank=True, verbose_name='Filière')
     
     # Position and Grade (Moroccan public sector)
     position = models.ForeignKey(Position, on_delete=models.PROTECT, related_name='employees', verbose_name='Fonction')
@@ -391,25 +449,76 @@ class Employee(models.Model):
 
 
 class EmploymentHistory(models.Model):
+    """Track employment changes: grade progression, contracts, retirement, etc."""
+    
     CHANGE_TYPES = [
-        ('grade', 'Grade/Scale change'),
-        ('position', 'Position change'),
-        ('organization', 'Organization change'),
-        ('status', 'Status/Contract change'),
-        ('other', 'Other'),
+        ('grade', 'Changement de Grade'),
+        ('echelle', 'Changement d\'Échelle'),
+        ('echelon', 'Changement d\'Échelon'),
+        ('contract', 'Nouveau Contrat'),
+        ('contract_renewal', 'Renouvellement de Contrat'),
+        ('titularisation', 'Titularisation'),
+        ('retirement', 'Retraite'),
+        ('contract_end', 'Fin de Contrat'),
+        ('status', 'Changement de Statut'),
+        ('position', 'Changement de Poste'),
+        ('organization', 'Changement Organisationnel'),
+        ('other', 'Autre'),
     ]
+    
     employee = models.ForeignKey('Employee', on_delete=models.CASCADE, related_name='history')
-    change_type = models.CharField(max_length=20, choices=CHANGE_TYPES)
-    changes = JSONField(default=dict)
-    effective_date = models.DateField()
-    note = models.CharField(max_length=255, blank=True)
+    change_type = models.CharField(max_length=20, choices=CHANGE_TYPES, verbose_name='Type de changement')
+    
+    # Store detailed changes as JSON for flexibility
+    changes = JSONField(default=dict, verbose_name='Détails des changements')
+    
+    # Contract specific fields
+    contract_start_date = models.DateField(null=True, blank=True, verbose_name='Date début contrat')
+    contract_end_date = models.DateField(null=True, blank=True, verbose_name='Date fin contrat')
+    
+    # Retirement specific
+    retirement_date = models.DateField(null=True, blank=True, verbose_name='Date de retraite')
+    post_retirement_contract = models.BooleanField(default=False, verbose_name='Contrat post-retraite')
+    
+    effective_date = models.DateField(verbose_name='Date effective')
+    note = models.TextField(blank=True, verbose_name='Notes')
+    document_reference = models.CharField(max_length=200, blank=True, verbose_name='Référence document')
+    
+    created_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='created_employment_changes',
+        verbose_name='Créé par'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-effective_date', '-created_at']
+        verbose_name = 'Historique d\'emploi'
+        verbose_name_plural = 'Historiques d\'emploi'
 
     def __str__(self):
-        return f"{self.employee} - {self.change_type} @ {self.effective_date}"
+        return f"{self.employee} - {self.get_change_type_display()} @ {self.effective_date}"
+
+    @property
+    def change_summary(self):
+        """Generate a human-readable summary"""
+        if self.change_type == 'contract' and self.contract_start_date:
+            return f"Contrat: {self.contract_start_date} → {self.contract_end_date or 'Indéterminé'}"
+        elif self.change_type == 'retirement' and self.retirement_date:
+            status = " (avec contrat post-retraite)" if self.post_retirement_contract else ""
+            return f"Retraite: {self.retirement_date}{status}"
+        elif self.changes:
+            # Format JSON changes
+            parts = []
+            for key, value in self.changes.items():
+                if isinstance(value, dict) and 'from' in value and 'to' in value:
+                    parts.append(f"{key}: {value['from']} → {value['to']}")
+            return ", ".join(parts) if parts else self.get_change_type_display()
+        return self.get_change_type_display()
 
 
 class GradeProgressionRule(models.Model):

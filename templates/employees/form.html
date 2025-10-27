@@ -101,6 +101,16 @@
         </div>
 
         <h5 class="card-title mb-3">Organization</h5>
+        <div class="alert alert-info small">
+          <strong>Affectations organisationnelles flexibles:</strong>
+          <ul class="mb-0 mt-2">
+            <li><strong>Direction seule:</strong> Pour postes de haut niveau (ex: Directeur)</li>
+            <li><strong>Direction + Service:</strong> Service rattaché directement à une Direction (ex: Service IT)</li>
+            <li><strong>Direction + Division:</strong> Poste au niveau de la Division</li>
+            <li><strong>Direction + Division + Service:</strong> Hiérarchie traditionnelle complète</li>
+            <li><strong>Direction + Département + Filière:</strong> Structure académique (Direction des Études)</li>
+          </ul>
+        </div>
         <div class="row g-3 mb-4">
           <div class="col-md-4">
             <label class="form-label">Direction <span class="text-danger">*</span></label>
@@ -110,20 +120,38 @@
             {% endif %}
           </div>
           <div class="col-md-4">
-            <label class="form-label">Division</label>
+            <label class="form-label">Division (optionnel)</label>
             {{ form.division }}
             {% if form.division.errors %}
             <div class="text-danger small">{{ form.division.errors.0 }}</div>
             {% endif %}
+            <div class="form-text">Division au sein de la Direction</div>
           </div>
           <div class="col-md-4">
-            <label class="form-label">Service</label>
+            <label class="form-label">Service (optionnel)</label>
             {{ form.service }}
             {% if form.service.errors %}
             <div class="text-danger small">{{ form.service.errors.0 }}</div>
             {% endif %}
+            <div class="form-text">Service rattaché à Division ou Direction</div>
           </div>
-          <div class="col-md-6">
+          <div class="col-md-4">
+            <label class="form-label">Département (optionnel)</label>
+            {{ form.departement }}
+            {% if form.departement.errors %}
+            <div class="text-danger small">{{ form.departement.errors.0 }}</div>
+            {% endif %}
+            <div class="form-text">Département académique</div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Filière (optionnel)</label>
+            {{ form.filiere }}
+            {% if form.filiere.errors %}
+            <div class="text-danger small">{{ form.filiere.errors.0 }}</div>
+            {% endif %}
+            <div class="form-text">Filière au sein du Département</div>
+          </div>
+          <div class="col-md-4">
             <label class="form-label">Position <span class="text-danger">*</span></label>
             {{ form.position }}
             {% if form.position.errors %}
@@ -240,4 +268,111 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Cascading dropdowns for Direction → Division → Service
+document.addEventListener('DOMContentLoaded', function() {
+  const directionSelect = document.getElementById('id_direction');
+  const divisionSelect = document.getElementById('id_division');
+  const serviceSelect = document.getElementById('id_service');
+  
+  const initialDivision = divisionSelect.value;
+  const initialService = serviceSelect.value;
+  
+  directionSelect.addEventListener('change', function() {
+    const directionId = this.value;
+    
+    // Reset division and service
+    divisionSelect.innerHTML = '<option value="">---------</option>';
+    serviceSelect.innerHTML = '<option value="">---------</option>';
+    
+    if (!directionId) return;
+    
+    // Fetch divisions
+    fetch(`/employees/api/get-divisions/?direction_id=${directionId}`)
+      .then(response => response.json())
+      .then(data => {
+        data.divisions.forEach(div => {
+          const option = document.createElement('option');
+          option.value = div.id;
+          option.textContent = div.name;
+          divisionSelect.appendChild(option);
+        });
+        
+        // Restore initial division if editing
+        if (initialDivision) {
+          divisionSelect.value = initialDivision;
+        }
+      });
+    
+    // Fetch services directly under direction
+    fetch(`/employees/api/get-services/?direction_id=${directionId}`)
+      .then(response => response.json())
+      .then(data => {
+        data.services.forEach(svc => {
+          const option = document.createElement('option');
+          option.value = svc.id;
+          option.textContent = svc.name;
+          serviceSelect.appendChild(option);
+        });
+        
+        // Restore initial service if editing
+        if (initialService && !divisionSelect.value) {
+          serviceSelect.value = initialService;
+        }
+      });
+  });
+  
+  divisionSelect.addEventListener('change', function() {
+    const divisionId = this.value;
+    const directionId = directionSelect.value;
+    
+    // Reset service
+    serviceSelect.innerHTML = '<option value="">---------</option>';
+    
+    if (divisionId) {
+      // Fetch services under this division
+      fetch(`/employees/api/get-services/?division_id=${divisionId}`)
+        .then(response => response.json())
+        .then(data => {
+          data.services.forEach(svc => {
+            const option = document.createElement('option');
+            option.value = svc.id;
+            option.textContent = svc.name;
+            serviceSelect.appendChild(option);
+          });
+          
+          // Restore initial service if editing
+          if (initialService) {
+            serviceSelect.value = initialService;
+          }
+        });
+    } else if (directionId) {
+      // No division selected, show services directly under direction
+      fetch(`/employees/api/get-services/?direction_id=${directionId}`)
+        .then(response => response.json())
+        .then(data => {
+          data.services.forEach(svc => {
+            const option = document.createElement('option');
+            option.value = svc.id;
+            option.textContent = svc.name;
+            serviceSelect.appendChild(option);
+          });
+          
+          // Restore initial service if editing
+          if (initialService) {
+            serviceSelect.value = initialService;
+          }
+        });
+    }
+  });
+  
+  // Trigger on page load if direction is already selected
+  if (directionSelect.value) {
+    directionSelect.dispatchEvent(new Event('change'));
+  }
+});
+</script>
 {% endblock %}

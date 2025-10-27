@@ -25,19 +25,50 @@ class ITAdminOnlyMixin(UserPassesTestMixin):
         return self.test_user_passes(self.request.user)
 
 
-class DashboardView(LoginRequiredMixin, ITAdminOnlyMixin, View):
+class DashboardView(LoginRequiredMixin, View):
+    """Main dashboard - accessible to all authenticated users, shows role-based content"""
     def get(self, request):
+        user = request.user
+        is_it_admin = user.is_superuser or user.groups.filter(name='IT Admin').exists()
+        is_hr_admin = user.groups.filter(name='HR Admin').exists()
+        
         # Calculate statistics
         total_employees = Employee.objects.count()
         active_employees = Employee.objects.filter(status='active').count()
         pending_leaves = LeaveRequest.objects.filter(status='pending').count()
-        total_users = User.objects.count()
+        
+        # IT Admin specific stats
+        total_users = User.objects.count() if is_it_admin else None
+        
+        # Get employee profile
+        emp = getattr(user, 'employee_profile', None)
+        
+        # My recent leave requests
+        my_leaves = []
+        my_balances = []
+        approvals_count = 0
+        
+        if emp:
+            my_leaves = list(emp.leave_requests.all()[:5])
+            year = timezone.now().year
+            my_balances = list(EmployeeLeaveBalance.objects.filter(employee=emp, year=year).select_related('leave_type')[:5])
+        
+        # If user is a supervisor, show pending approvals count
+        scope_q = approvals_scope_q_for_user(user)
+        if scope_q != Q(pk__in=[]):
+            approvals_count = LeaveRequest.objects.filter(scope_q, status='pending').count()
         
         context = {
             'total_employees': total_employees,
             'active_employees': active_employees,
             'pending_leaves': pending_leaves,
             'total_users': total_users,
+            'is_it_admin': is_it_admin,
+            'is_hr_admin': is_hr_admin,
+            'employee': emp,
+            'my_leaves': my_leaves,
+            'my_balances': my_balances,
+            'approvals_count': approvals_count,
         }
         return render(request, 'admin_dashboard/index.html', context)
 

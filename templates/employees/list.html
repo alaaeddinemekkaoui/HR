@@ -9,7 +9,7 @@
     </button>
     {% if perms.employees.add_employee %}
     <a class="btn btn-primary" href="{% url 'employees:create' %}">
-      <i class="bi bi-plus-circle"></i> Add Employee
+      <i class="bi bi-plus-circle"></i> Ajouter Employé
     </a>
     {% endif %}
   </div>
@@ -119,6 +119,11 @@
                 {% if perms.employees.change_employee %}
                 <a class="btn btn-outline-secondary" href="{% url 'employees:edit' e.id %}">
                   <i class="bi bi-pencil"></i> Edit
+                </a>
+                {% endif %}
+                {% if request.user.is_superuser or request.user.groups.all.0.name == 'IT Admin' %}
+                <a class="btn btn-outline-info" href="{% url 'employees:detail' e.id %}#leave-balances" title="Modifier soldes de congé">
+                  <i class="bi bi-calendar-check"></i> Congés
                 </a>
                 {% endif %}
                 {% if perms.employees.delete_employee %}

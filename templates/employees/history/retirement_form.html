@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Enregistrer Retraite - {{ employee.full_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-user-clock"></i> Enregistrer la Retraite
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Employee Info -->
+                    <div class="alert alert-info mb-4">
+                        <strong>Employé:</strong> {{ employee.full_name }} ({{ employee.employee_id }})<br>
+                        <strong>Grade:</strong> {{ employee.grade|default:"N/A" }}<br>
+                        <strong>Statut actuel:</strong> {{ employee.get_status_display }}
+                    </div>
+                    
+                    <!-- Form -->
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="retirement_date" class="form-label">
+                                Date de Retraite <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="retirement_date" name="retirement_date" required>
+                            <small class="form-text text-muted">Date effective de départ à la retraite</small>
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="post_retirement_contract" name="post_retirement_contract">
+                            <label class="form-check-label" for="post_retirement_contract">
+                                Contrat post-retraite
+                            </label>
+                            <small class="form-text text-muted d-block">Cochez si l'employé continue à travailler après la retraite</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">
+                                Notes
+                            </label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="document_reference" class="form-label">
+                                Référence Document
+                            </label>
+                            <input type="text" class="form-control" id="document_reference" name="document_reference" maxlength="200">
+                            <small class="form-text text-muted">Ex: Décision N°123/2024</small>
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> <strong>Attention:</strong> 
+                            Si aucun contrat post-retraite n'est coché, le statut de l'employé sera automatiquement changé en "Retraité".
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'employees:detail' employee.pk %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Enregistrer la Retraite
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

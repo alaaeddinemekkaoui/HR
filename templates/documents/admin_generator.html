@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Générateur de Documents - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-file-earmark-text"></i> Générateur de Documents</h2>
+                <a href="{% url 'documents:home' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Retour
+                </a>
+            </div>
+            
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> <strong>Information:</strong> 
+                Recherchez un employé par nom, matricule ou PPR pour générer des documents administratifs.
+            </div>
+            
+            <!-- Search Form -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-10">
+                            <input 
+                                type="text" 
+                                name="search" 
+                                class="form-control form-control-lg" 
+                                placeholder="Rechercher par nom, matricule ou PPR..." 
+                                value="{{ search_query }}"
+                                autofocus
+                            >
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary btn-lg w-100">
+                                <i class="bi bi-search"></i> Rechercher
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Search Results -->
+            {% if search_query %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-people"></i> Résultats de Recherche
+                        {% if employees %}
+                            <span class="badge bg-primary">{{ employees|length }}</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if employees %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Matricule</th>
+                                    <th>Nom Complet</th>
+                                    <th>Poste</th>
+                                    <th>Grade</th>
+                                    <th>Organisation</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for emp in employees %}
+                                <tr>
+                                    <td><strong>{{ emp.employee_id }}</strong></td>
+                                    <td>{{ emp.full_name }}</td>
+                                    <td>{{ emp.position|default:"N/A" }}</td>
+                                    <td>{{ emp.grade|default:"N/A" }}</td>
+                                    <td>
+                                        {% if emp.service %}
+                                            {{ emp.service.name }}
+                                        {% elif emp.division %}
+                                            {{ emp.division.name }}
+                                        {% elif emp.direction %}
+                                            {{ emp.direction.name }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'documents:attestation_travail' emp.id %}" 
+                                               class="btn btn-outline-primary" 
+                                               target="_blank"
+                                               title="Attestation de Travail">
+                                                <i class="bi bi-file-earmark-text"></i> Attestation de Travail
+                                            </a>
+                                            <a href="{% url 'documents:attestation_salaire' emp.id %}" 
+                                               class="btn btn-outline-success" 
+                                               target="_blank"
+                                               title="Attestation de Salaire">
+                                                <i class="bi bi-currency-dollar"></i> Attestation de Salaire
+                                            </a>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                                    <i class="bi bi-file-earmark-plus"></i> Autres Documents
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    {% for template in templates %}
+                                                    <li>
+                                                        <a class="dropdown-item" href="{% url 'documents:template_render_for' template.slug emp.id %}" target="_blank">
+                                                            {{ template.name }}
+                                                        </a>
+                                                    </li>
+                                                    {% empty %}
+                                                    <li><span class="dropdown-item text-muted">Aucun modèle disponible</span></li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </div>
+                                            <a href="{% url 'employees:detail' emp.id %}" 
+                                               class="btn btn-outline-secondary" 
+                                               title="Voir Profil">
+                                                <i class="bi bi-person"></i> Profil
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Aucun employé trouvé pour "<strong>{{ search_query }}</strong>".
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

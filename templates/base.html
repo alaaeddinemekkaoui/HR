@@ -1,11 +1,11 @@
 {% load roles_extras %}
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{% block title %}HR System{% endblock %} - IAV Hassan II</title>
+  <title>{% block title %}Système RH{% endblock %} - IAV Hassan II</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <link rel="stylesheet" href="{% static 'css/iav-theme.css' %}">
@@ -34,15 +34,15 @@
           {% endif %}
           {% if '/accounts/login' not in request.path %}
           <li class="nav-item">
-            <a class="nav-link {% if request.path == '/' or '/employees' in request.path %}active{% endif %}" href="/employees/">
-              <i class="bi bi-people"></i> Employees
+            <a class="nav-link {% if '/employees' in request.path %}active{% endif %}" href="/employees/">
+              <i class="bi bi-people"></i> Employés
             </a>
           </li>
           {% endif %}
           {% if request.user.is_authenticated %}
           <li class="nav-item">
             <a class="nav-link {% if '/leaves' in request.path %}active{% endif %}" href="{% url 'leaves:my' %}">
-              <i class="bi bi-calendar-event"></i> Leaves
+              <i class="bi bi-calendar-event"></i> Congés
             </a>
           </li>
           {% endif %}
@@ -52,7 +52,7 @@
           <!-- Search Bar -->
           {% if '/accounts/login' not in request.path %}
           <form action="/employees/" method="get" class="d-none d-md-block position-relative" style="width: 300px;">
-            <input type="text" name="q" class="form-control" placeholder="Search employees..." value="{{ request.GET.q }}" style="border-radius: 20px; padding-left: 40px; background: var(--bg-main); border: 1px solid var(--border-color);">
+            <input type="text" name="q" class="form-control" placeholder="Rechercher des employés..." value="{{ request.GET.q }}" style="border-radius: 20px; padding-left: 40px; background: var(--bg-main); border: 1px solid var(--border-color);">
             <i class="bi bi-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); pointer-events: none;"></i>
           </form>
           {% endif %}
@@ -69,7 +69,7 @@
             <ul class="dropdown-menu dropdown-menu-end" style="min-width: 320px;">
               <li class="dropdown-header d-flex justify-content-between align-items-center">
                 <span>Notifications</span>
-                <a href="{% url 'notifications:list' %}" class="small">View all</a>
+                <a href="{% url 'notifications:list' %}" class="small">Voir tout</a>
               </li>
               {% if notifications_unread and notifications_unread|length > 0 %}
                 {% for n in notifications_unread %}
@@ -77,13 +77,13 @@
                   <a class="dropdown-item" href="{% url 'notifications:go' n.id %}">
                     <div class="d-flex flex-column">
                       <span class="fw-semibold">{{ n.title }}</span>
-                      <small class="text-muted">{{ n.created_at|timesince }} ago</small>
+                      <small class="text-muted">Il y a {{ n.created_at|timesince }}</small>
                     </div>
                   </a>
                 </li>
                 {% endfor %}
               {% else %}
-                <li><span class="dropdown-item-text text-muted"><small>No new notifications</small></span></li>
+                <li><span class="dropdown-item-text text-muted"><small>Aucune nouvelle notification</small></span></li>
               {% endif %}
             </ul>
           </div>
@@ -99,12 +99,12 @@
           <form method="post" action="{% url 'logout' %}" class="d-inline">
             {% csrf_token %}
             <button type="submit" class="btn btn-outline-danger btn-sm">
-              <i class="bi bi-box-arrow-right"></i> Logout
+              <i class="bi bi-box-arrow-right"></i> Déconnexion
             </button>
           </form>
           {% else %}
           <a class="btn btn-outline-primary btn-sm" href="/accounts/login/">
-            <i class="bi bi-box-arrow-in-right"></i> Login
+            <i class="bi bi-box-arrow-in-right"></i> Connexion
           </a>
           {% endif %}
         </div>
@@ -122,14 +122,20 @@
         <div class="sidebar-section">
           <div class="sidebar-section-header" data-bs-toggle="collapse" data-bs-target="#employeesSection">
             <i class="bi bi-people"></i>
-            <span>Employees</span>
+            <span>Employés</span>
             <i class="bi bi-chevron-down ms-auto"></i>
           </div>
           <div class="collapse show" id="employeesSection">
             <a href="/employees/" class="sidebar-item {% if '/employees/' in request.path and '/organization' not in request.path and '/grades' not in request.path %}active{% endif %}">
               <i class="bi bi-list-ul"></i>
-              <span>Employee List</span>
+              <span>Liste des employés</span>
             </a>
+            {% if perms.employees.add_employee %}
+            <a href="{% url 'employees:create' %}" class="sidebar-item">
+              <i class="bi bi-person-plus"></i>
+              <span>Ajouter Employé</span>
+            </a>
+            {% endif %}
           </div>
         </div>
 
@@ -153,6 +159,14 @@
               <i class="bi bi-briefcase"></i>
               <span>Services</span>
             </a>
+            <a href="/employees/organization/departements/" class="sidebar-item {% if '/departements' in request.path %}active{% endif %}">
+              <i class="bi bi-book"></i>
+              <span>Départements</span>
+            </a>
+            <a href="/employees/organization/filieres/" class="sidebar-item {% if '/filieres' in request.path %}active{% endif %}">
+              <i class="bi bi-mortarboard"></i>
+              <span>Filières</span>
+            </a>
           </div>
         </div>
         
@@ -161,29 +175,33 @@
         <div class="sidebar-section">
           <div class="sidebar-section-header" data-bs-toggle="collapse" data-bs-target="#leavesSection">
             <i class="bi bi-calendar-event"></i>
-            <span>Leaves</span>
+            <span>Congés</span>
             <i class="bi bi-chevron-down ms-auto"></i>
           </div>
           <div class="collapse show" id="leavesSection">
             <a href="{% url 'leaves:my' %}" class="sidebar-item {% if 'leaves/my' in request.path %}active{% endif %}">
               <i class="bi bi-calendar-heart"></i>
-              <span>My Leaves</span>
+              <span>Mes congés</span>
             </a>
             <a href="{% url 'leaves:request' %}" class="sidebar-item {% if 'leaves/request' in request.path %}active{% endif %}">
               <i class="bi bi-calendar-plus"></i>
-              <span>Request Leave</span>
+              <span>Demander un congé</span>
             </a>
             {% with emp=request.user.employee_profile %}
               {% if request.user.is_superuser or request.user|has_group:'HR Admin' or request.user|has_group:'IT Admin' %}
+                <a href="{% url 'leaves:all_requests' %}" class="sidebar-item {% if 'leaves/all-requests' in request.path %}active{% endif %}">
+                  <i class="bi bi-calendar-range"></i>
+                  <span>Toutes les demandes</span>
+                </a>
                 <a href="{% url 'leaves:approve' %}" class="sidebar-item {% if 'leaves/approve' in request.path %}active{% endif %}">
                   <i class="bi bi-calendar-check"></i>
-                  <span>Approvals</span>
+                  <span>Approbations</span>
                 </a>
               {% elif emp and emp.position and emp.position.position_type %}
                 {% if emp.position.position_type == 'chef_service' or emp.position.position_type == 'chef_division' or emp.position.position_type == 'chef_direction' %}
                   <a href="{% url 'leaves:approve' %}" class="sidebar-item {% if 'leaves/approve' in request.path %}active{% endif %}">
                     <i class="bi bi-calendar-check"></i>
-                    <span>Approvals</span>
+                    <span>Approbations</span>
                   </a>
                 {% endif %}
               {% endif %}
@@ -199,10 +217,16 @@
             <i class="bi bi-chevron-down ms-auto"></i>
           </div>
           <div class="collapse show" id="documentsSection">
-            <a href="/documents/" class="sidebar-item {% if '/documents' in request.path %}active{% endif %}">
+            <a href="/documents/" class="sidebar-item {% if '/documents/' == request.path %}active{% endif %}">
               <i class="bi bi-files"></i>
               <span>Demande des documents</span>
             </a>
+            {% if request.user.is_superuser or request.user|has_group:'IT Admin' or request.user|has_group:'HR Admin' %}
+            <a href="{% url 'documents:admin_generator' %}" class="sidebar-item {% if '/documents/admin-generator' in request.path %}active{% endif %}">
+              <i class="bi bi-file-earmark-plus"></i>
+              <span>Générer Documents (Admin)</span>
+            </a>
+            {% endif %}
           </div>
         </div>
 
@@ -217,11 +241,11 @@
           <div class="collapse show" id="adminSection">
             <a href="{% url 'roles:users' %}" class="sidebar-item {% if '/roles/users' in request.path %}active{% endif %}">
               <i class="bi bi-person-gear"></i>
-              <span>Users</span>
+              <span>Utilisateurs</span>
             </a>
             <a href="{% url 'roles:role_list' %}" class="sidebar-item {% if '/roles/role' in request.path %}active{% endif %}">
               <i class="bi bi-shield-check"></i>
-              <span>Roles</span>
+              <span>Rôles</span>
             </a>
             <a href="/employees/grades/" class="sidebar-item {% if '/grades' in request.path %}active{% endif %}">
               <i class="bi bi-award"></i>
@@ -229,7 +253,7 @@
             </a>
             <a href="/dashboard/" class="sidebar-item {% if '/dashboard' in request.path %}active{% endif %}">
               <i class="bi bi-speedometer2"></i>
-              <span>Dashboard</span>
+              <span>Tableau de bord</span>
             </a>
           </div>
         </div>
@@ -246,7 +270,7 @@
           <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" style="margin-bottom: 20px;">
             <i class="bi {% if message.tags == 'success' %}bi-check-circle{% elif message.tags == 'error' or message.tags == 'danger' %}bi-exclamation-triangle{% elif message.tags == 'warning' %}bi-exclamation-circle{% else %}bi-info-circle{% endif %}"></i>
             {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
           </div>
         {% endfor %}
       {% endif %}

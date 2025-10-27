@@ -1,5 +1,21 @@
 from django import forms
 from .models import LeaveType, LeaveRequest
+from .models import EmployeeLeaveBalance
+from django import forms
+
+
+class EmployeeLeaveBalanceForm(forms.ModelForm):
+    class Meta:
+        model = EmployeeLeaveBalance
+        fields = ['opening', 'accrued', 'used', 'carried_over', 'expired', 'closing']
+        widgets = {
+            'opening': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'accrued': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'used': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'carried_over': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'expired': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'closing': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+        }
 
 class LeaveTypeForm(forms.ModelForm):
     class Meta:

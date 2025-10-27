@@ -1,20 +1,20 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %}Dashboard{% endblock %}
+{% block title %}Tableau de bord{% endblock %}
 {% block content %}
 <div class="mb-4">
-  <h1 class="h3 mb-1">Dashboard</h1>
-  <p class="text-muted">Overview of HR System</p>
+  <h1 class="h3 mb-1">Bienvenue, {{ request.user.get_full_name|default:request.user.username }}</h1>
+  <p class="text-muted">Vue d'ensemble du système RH</p>
 </div>
 
-<!-- Stats Cards -->
+<!-- Cartes de statistiques -->
 <div class="row g-4 mb-4">
   <div class="col-md-3">
     <div class="card border-0 shadow-sm">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-start">
           <div>
-            <p class="text-muted mb-1 small">Total Employees</p>
+            <p class="text-muted mb-1 small">Total Employés</p>
             <h3 class="mb-0">{{ total_employees|default:"0" }}</h3>
           </div>
           <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: rgba(79, 124, 255, 0.1);">
@@ -30,7 +30,7 @@
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-start">
           <div>
-            <p class="text-muted mb-1 small">Active Employees</p>
+            <p class="text-muted mb-1 small">Employés Actifs</p>
             <h3 class="mb-0">{{ active_employees|default:"0" }}</h3>
           </div>
           <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: rgba(22, 199, 132, 0.1);">
@@ -46,7 +46,7 @@
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-start">
           <div>
-            <p class="text-muted mb-1 small">Pending Leaves</p>
+            <p class="text-muted mb-1 small">Congés en Attente</p>
             <h3 class="mb-0">{{ pending_leaves|default:"0" }}</h3>
           </div>
           <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: rgba(255, 167, 38, 0.1);">
@@ -57,12 +57,13 @@
     </div>
   </div>
   
+  {% if is_it_admin %}
   <div class="col-md-3">
     <div class="card border-0 shadow-sm">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-start">
           <div>
-            <p class="text-muted mb-1 small">Total Users</p>
+            <p class="text-muted mb-1 small">Total Utilisateurs</p>
             <h3 class="mb-0">{{ total_users|default:"0" }}</h3>
           </div>
           <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: rgba(138, 43, 226, 0.1);">
@@ -72,46 +73,61 @@
       </div>
     </div>
   </div>
+  {% endif %}
 </div>
 
-<!-- Quick Actions -->
+<!-- Actions rapides -->
 <div class="row g-4 mb-4">
-  <div class="col-lg-8">
+  <div class="col-lg-{% if is_it_admin %}8{% else %}12{% endif %}">
     <div class="card border-0 shadow-sm">
       <div class="card-header bg-white border-bottom">
-        <h6 class="mb-0"><i class="bi bi-lightning-fill text-primary"></i> Quick Actions</h6>
+        <h6 class="mb-0"><i class="bi bi-lightning-fill text-primary"></i> Actions Rapides</h6>
       </div>
       <div class="card-body">
         <div class="row g-3">
+          {% if is_it_admin or is_hr_admin %}
           <div class="col-md-4">
             <a href="{% url 'employees:create' %}" class="text-decoration-none">
               <div class="p-3 border rounded hover-card text-center">
                 <i class="bi bi-person-plus-fill text-primary" style="font-size: 32px;"></i>
-                <p class="mb-0 mt-2 fw-medium">Add Employee</p>
+                <p class="mb-0 mt-2 fw-medium">Ajouter Employé</p>
               </div>
             </a>
           </div>
+          {% endif %}
           <div class="col-md-4">
             <a href="{% url 'leaves:request' %}" class="text-decoration-none">
               <div class="p-3 border rounded hover-card text-center">
                 <i class="bi bi-calendar-plus text-success" style="font-size: 32px;"></i>
-                <p class="mb-0 mt-2 fw-medium">Request Leave</p>
+                <p class="mb-0 mt-2 fw-medium">Demander un Congé</p>
               </div>
             </a>
           </div>
+          {% if approvals_count > 0 %}
           <div class="col-md-4">
             <a href="{% url 'leaves:approve' %}" class="text-decoration-none">
               <div class="p-3 border rounded hover-card text-center">
                 <i class="bi bi-check2-circle text-info" style="font-size: 32px;"></i>
-                <p class="mb-0 mt-2 fw-medium">Approve Leaves</p>
+                <p class="mb-0 mt-2 fw-medium">Approuver Congés</p>
+                {% if approvals_count %}<span class="badge bg-danger">{{ approvals_count }}</span>{% endif %}
               </div>
             </a>
           </div>
+          {% endif %}
+          <div class="col-md-4">
+            <a href="{% url 'leaves:my' %}" class="text-decoration-none">
+              <div class="p-3 border rounded hover-card text-center">
+                <i class="bi bi-calendar3 text-primary" style="font-size: 32px;"></i>
+                <p class="mb-0 mt-2 fw-medium">Mes Congés</p>
+              </div>
+            </a>
+          </div>
+          {% if is_it_admin %}
           <div class="col-md-4">
             <a href="{% url 'roles:users' %}" class="text-decoration-none">
               <div class="p-3 border rounded hover-card text-center">
                 <i class="bi bi-person-gear text-warning" style="font-size: 32px;"></i>
-                <p class="mb-0 mt-2 fw-medium">Manage Users</p>
+                <p class="mb-0 mt-2 fw-medium">Gérer Utilisateurs</p>
               </div>
             </a>
           </div>
@@ -119,7 +135,7 @@
             <a href="{% url 'employees:org_directions' %}" class="text-decoration-none">
               <div class="p-3 border rounded hover-card text-center">
                 <i class="bi bi-diagram-3 text-purple" style="font-size: 32px; color: #8A2BE2;"></i>
-                <p class="mb-0 mt-2 fw-medium">Organization</p>
+                <p class="mb-0 mt-2 fw-medium">Organisation</p>
               </div>
             </a>
           </div>
@@ -131,56 +147,117 @@
               </div>
             </a>
           </div>
+          {% endif %}
         </div>
       </div>
     </div>
   </div>
   
+  {% if is_it_admin %}
   <div class="col-lg-4">
     <div class="card border-0 shadow-sm">
       <div class="card-header bg-white border-bottom">
-        <h6 class="mb-0"><i class="bi bi-info-circle-fill text-primary"></i> System Info</h6>
+        <h6 class="mb-0"><i class="bi bi-info-circle-fill text-primary"></i> Informations Système</h6>
       </div>
       <div class="card-body">
         <div class="mb-3">
-          <small class="text-muted">System Status</small>
+          <small class="text-muted">Statut du Système</small>
           <div class="d-flex align-items-center gap-2 mt-1">
-            <span class="badge bg-success">Online</span>
-            <small class="text-muted">All systems operational</small>
+            <span class="badge bg-success">En ligne</span>
+            <small class="text-muted">Tous les systèmes opérationnels</small>
           </div>
         </div>
         <div class="mb-3">
-          <small class="text-muted">Database</small>
+          <small class="text-muted">Base de données</small>
           <div class="d-flex align-items-center gap-2 mt-1">
-            <span class="badge bg-success">Connected</span>
+            <span class="badge bg-success">Connectée</span>
             <small class="text-muted">PostgreSQL</small>
           </div>
         </div>
         <div>
-          <small class="text-muted">Your Role</small>
+          <small class="text-muted">Votre Rôle</small>
           <div class="mt-1">
-            <span class="badge bg-primary">Administrator</span>
+            <span class="badge bg-primary">Administrateur IT</span>
           </div>
         </div>
       </div>
     </div>
   </div>
+  {% endif %}
 </div>
 
-<!-- Recent Activity (placeholder) -->
+<!-- Mes congés récents -->
+{% if my_leaves %}
 <div class="row g-4">
   <div class="col-lg-12">
     <div class="card border-0 shadow-sm">
       <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
-        <h6 class="mb-0"><i class="bi bi-clock-history text-primary"></i> Recent Activity</h6>
-        <a href="{% url 'employees:list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+        <h6 class="mb-0"><i class="bi bi-calendar3 text-primary"></i> Mes Congés Récents</h6>
+  <a href="{% url 'leaves:my' %}" class="btn btn-sm btn-outline-primary">Voir Tout</a>
       </div>
       <div class="card-body">
-        <p class="text-muted text-center py-4">Activity tracking coming soon...</p>
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Date de Début</th>
+                <th>Date de Fin</th>
+                <th>Jours</th>
+                <th>Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for leave in my_leaves %}
+              <tr>
+                <td>{{ leave.leave_type.name }}</td>
+                <td>{{ leave.start_date|date:"d/m/Y" }}</td>
+                <td>{{ leave.end_date|date:"d/m/Y" }}</td>
+                <td>{{ leave.total_days }}</td>
+                <td>
+                  {% if leave.status == 'pending' %}
+                    <span class="badge bg-warning">En attente</span>
+                  {% elif leave.status == 'approved' %}
+                    <span class="badge bg-success">Approuvé</span>
+                  {% else %}
+                    <span class="badge bg-danger">Rejeté</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
 </div>
+{% endif %}
+
+<!-- Soldes de congés -->
+{% if my_balances %}
+<div class="row g-4 mt-1">
+  <div class="col-lg-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom">
+        <h6 class="mb-0"><i class="bi bi-piggy-bank text-primary"></i> Mes Soldes de Congés</h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          {% for balance in my_balances %}
+          <div class="col-md-3">
+            <div class="p-3 border rounded text-center">
+              <h4 class="mb-1 text-primary">{{ balance.balance }}</h4>
+              <small class="text-muted">{{ balance.leave_type.name }}</small>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <style>
 .hover-card {

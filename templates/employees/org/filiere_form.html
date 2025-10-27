@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if mode == 'create' %}Nouvelle Filière{% else %}Modifier Filière{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <h4><i class="bi bi-mortarboard"></i> {% if mode == 'create' %}Nouvelle Filière{% else %}Modifier Filière{% endif %}</h4>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+              </div>
+            {% endif %}
+
+            <div class="mb-3">
+              <label for="{{ form.departement.id_for_label }}" class="form-label">Département <span class="text-danger">*</span></label>
+              {{ form.departement }}
+              {% if form.departement.errors %}
+                <div class="invalid-feedback d-block">{{ form.departement.errors }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label for="{{ form.name.id_for_label }}" class="form-label">Nom <span class="text-danger">*</span></label>
+              {{ form.name }}
+              {% if form.name.errors %}
+                <div class="invalid-feedback d-block">{{ form.name.errors }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label for="{{ form.code.id_for_label }}" class="form-label">Code <span class="text-danger">*</span></label>
+              {{ form.code }}
+              {% if form.code.errors %}
+                <div class="invalid-feedback d-block">{{ form.code.errors }}</div>
+              {% endif %}
+              <div class="form-text">Code unique pour identifier la filière</div>
+            </div>
+
+            <div class="mb-3">
+              <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+              {{ form.description }}
+              {% if form.description.errors %}
+                <div class="invalid-feedback d-block">{{ form.description.errors }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3 form-check">
+              {{ form.is_active }}
+              <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                Actif
+              </label>
+            </div>
+
+            <div class="d-flex justify-content-between">
+              <a href="{% url 'employees:org_filieres' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Retour
+              </a>
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save"></i> {% if mode == 'create' %}Créer{% else %}Mettre à jour{% endif %}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

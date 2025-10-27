@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+
+{% block title %}Leave Request Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <a href="{% url 'leaves:all_requests' %}" class="btn btn-sm btn-outline-secondary mb-3">
+                <i class="bi bi-arrow-left"></i> Back to All Requests
+            </a>
+            <h2>Leave Request Details</h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Leave Request Details -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Request Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Employee:</strong><br>
+                            <a href="{% url 'employees:detail' leave_request.employee.id %}">{{ leave_request.employee.full_name }}</a>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Position:</strong><br>
+                            {{ leave_request.employee.position.name }}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Direction:</strong><br>
+                            {{ leave_request.employee.direction.name|default:"-" }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Division:</strong><br>
+                            {{ leave_request.employee.division.name|default:"-" }}
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Leave Type:</strong><br>
+                            <span class="badge bg-info">{{ leave_request.leave_type.code }}</span>
+                            {{ leave_request.leave_type.name }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Current Status:</strong><br>
+                            {% if leave_request.status == 'pending' %}
+                            <span class="badge bg-warning text-dark fs-6">Pending</span>
+                            {% elif leave_request.status == 'approved' %}
+                            <span class="badge bg-success fs-6">Approved</span>
+                            {% elif leave_request.status == 'rejected' %}
+                            <span class="badge bg-danger fs-6">Rejected</span>
+                            {% else %}
+                            <span class="badge bg-secondary fs-6">{{ leave_request.get_status_display }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <strong>Start Date:</strong><br>
+                            {{ leave_request.start_date|date:"l, F d, Y" }}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>End Date:</strong><br>
+                            {{ leave_request.end_date|date:"l, F d, Y" }}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Total Days:</strong><br>
+                            <span class="fs-5 text-primary">{{ leave_request.days }}</span> days
+                        </div>
+                    </div>
+
+                    {% if leave_request.reason %}
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong>Reason:</strong><br>
+                            <p class="bg-light p-3 rounded">{{ leave_request.reason }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Requested On:</strong><br>
+                            {{ leave_request.created_at|date:"Y-m-d H:i:s" }}
+                        </div>
+                        {% if leave_request.approver %}
+                        <div class="col-md-6">
+                            <strong>Approver:</strong><br>
+                            {{ leave_request.approver.get_full_name|default:leave_request.approver.username }}
+                            {% if leave_request.approved_at %}
+                            <br><small class="text-muted">on {{ leave_request.approved_at|date:"Y-m-d H:i:s" }}</small>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Timeline -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history"></i> Request History
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if history %}
+                    <div class="timeline">
+                        {% for entry in history %}
+                        <div class="timeline-item mb-4">
+                            <div class="d-flex align-items-start">
+                                <div class="timeline-marker me-3">
+                                    {% if entry.new_status == 'pending' %}
+                                    <i class="bi bi-clock-fill text-warning fs-4"></i>
+                                    {% elif entry.new_status == 'approved' %}
+                                    <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                                    {% elif entry.new_status == 'rejected' %}
+                                    <i class="bi bi-x-circle-fill text-danger fs-4"></i>
+                                    {% else %}
+                                    <i class="bi bi-circle-fill text-secondary fs-4"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold">
+                                        {% if entry.previous_status %}
+                                        <span class="text-muted">{{ entry.previous_status|title }}</span>
+                                        <i class="bi bi-arrow-right"></i>
+                                        {% endif %}
+                                        <span class="text-primary">{{ entry.new_status|title }}</span>
+                                    </div>
+                                    <div class="text-muted small">
+                                        <i class="bi bi-person"></i> 
+                                        {{ entry.action_by.get_full_name|default:entry.action_by.username }}
+                                    </div>
+                                    <div class="text-muted small">
+                                        <i class="bi bi-calendar"></i> 
+                                        {{ entry.timestamp|date:"Y-m-d H:i:s" }}
+                                    </div>
+                                    {% if entry.comment %}
+                                    <div class="mt-2 p-2 bg-light rounded small">
+                                        <i class="bi bi-chat-left-text"></i> {{ entry.comment }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% if not forloop.last %}
+                        <div class="timeline-connector ms-3 mb-3" style="border-left: 2px dashed #dee2e6; height: 20px;"></div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle"></i> No history recorded yet.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons (if user has permission and not HR Admin) -->
+    {% if can_approve and leave_request.status == 'pending' %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0">Take Action</h5>
+                </div>
+                <div class="card-body">
+                    {% if is_hr_admin %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> 
+                        <strong>HR Admin (Read-Only):</strong> You can view this request but cannot approve or reject it.
+                    </div>
+                    {% else %}
+                    <form method="post" action="{% url 'leaves:approve_action' leave_request.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="approved">
+                        <button type="submit" class="btn btn-success btn-lg me-2">
+                            <i class="bi bi-check-circle"></i> Approve
+                        </button>
+                    </form>
+                    <form method="post" action="{% url 'leaves:approve_action' leave_request.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="rejected">
+                        <button type="submit" class="btn btn-danger btn-lg">
+                            <i class="bi bi-x-circle"></i> Reject
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

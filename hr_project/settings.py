@@ -57,17 +57,25 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'hr_project.wsgi.application'
+ASGI_APPLICATION = 'hr_project.asgi.application'
 
-# Database (PostgreSQL if env vars set; otherwise SQLite for dev)
-if os.getenv('POSTGRES_DB'):
+# Database (MySQL if env vars set; otherwise SQLite for dev)
+if os.getenv('MYSQL_DATABASE'):
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('POSTGRES_DB'),
-            'USER': os.getenv('POSTGRES_USER'),
-            'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
-            'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
-            'PORT': os.getenv('POSTGRES_PORT', '5432'),
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.getenv('MYSQL_DATABASE'),
+            'USER': os.getenv('MYSQL_USER'),
+            'PASSWORD': os.getenv('MYSQL_PASSWORD'),
+            'HOST': os.getenv('MYSQL_HOST', 'localhost'),
+            'PORT': os.getenv('MYSQL_PORT', '3306'),
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            },
+            # Connection pooling for performance under load
+            'CONN_MAX_AGE': 600,  # Keep connections alive for 10 minutes
+            'CONN_HEALTH_CHECKS': True,  # Check connection health before reusing
         }
     }
 else:
@@ -77,6 +85,34 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+
+# Redis Cache Configuration with async support and connection pooling
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': os.environ.get('REDIS_URL', 'redis://redis:6379/1'),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CONNECTION_POOL_KWARGS': {
+                'max_connections': 50,
+                'retry_on_timeout': True,
+                'socket_keepalive': True,
+                'socket_timeout': 5,
+                'socket_connect_timeout': 5,
+            },
+            'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
+        },
+        'KEY_PREFIX': 'hr_app',
+        'TIMEOUT': 300,  # Default timeout: 5 minutes
+    }
+}
+
+# Cache middleware (optional - for whole page caching)
+# MIDDLEWARE = [
+#     'django.middleware.cache.UpdateCacheMiddleware',
+#     ...other middleware...
+#     'django.middleware.cache.FetchFromCacheMiddleware',
+# ]
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

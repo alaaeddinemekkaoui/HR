@@ -19,6 +19,14 @@ class NotificationMarkAllReadView(LoginRequiredMixin, View):
         return redirect('notifications:list')
 
 
+class NotificationClearAllView(LoginRequiredMixin, View):
+    def post(self, request):
+        count = Notification.objects.filter(recipient=request.user).count()
+        Notification.objects.filter(recipient=request.user).delete()
+        messages.success(request, f'{count} notification(s) cleared.')
+        return redirect('notifications:list')
+
+
 class NotificationGoView(LoginRequiredMixin, View):
     """Mark a notification as read and redirect to its target URL."""
     def get(self, request, pk):

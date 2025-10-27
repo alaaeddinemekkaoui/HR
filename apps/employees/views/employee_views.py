@@ -5,13 +5,16 @@ from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
+from django.http import JsonResponse
+from django.core.cache import cache
 from ..models import Employee, Direction, Division, Service
 from ..forms import EmployeeForm
 from ..controllers.employee_controller import (
     list_employees,
     delete_employee,
 )
+from ..cache import CacheKeys, CacheTTL
 
 
 class EmployeeCreateAccountView(PermissionRequiredMixin, View):
@@ -70,6 +73,9 @@ class EmployeeModifyAccountView(PermissionRequiredMixin, View):
         new_password = request.POST.get('new_password', '').strip()
         new_password_confirm = request.POST.get('new_password_confirm', '').strip()
         
+        # Check if user is IT Admin
+        is_it_admin = request.user.is_superuser or request.user.groups.filter(name='IT Admin').exists()
+        
         if not username:
             messages.error(request, 'Username is required.')
             return redirect(reverse('employees:detail', kwargs={'pk': pk}))
@@ -79,8 +85,12 @@ class EmployeeModifyAccountView(PermissionRequiredMixin, View):
             messages.error(request, f'Username "{username}" is already taken.')
             return redirect(reverse('employees:detail', kwargs={'pk': pk}))
         
-        # Check password match if provided
+        # Only IT Admin can change passwords
         if new_password:
+            if not is_it_admin:
+                messages.error(request, 'Seuls les administrateurs IT peuvent modifier les mots de passe.')
+                return redirect(reverse('employees:detail', kwargs={'pk': pk}))
+            
             if new_password != new_password_confirm:
                 messages.error(request, 'New passwords do not match.')
                 return redirect(reverse('employees:detail', kwargs={'pk': pk}))
@@ -91,6 +101,18 @@ class EmployeeModifyAccountView(PermissionRequiredMixin, View):
         user.email = email
         user.is_active = is_active
         user.save()
+        
+        # Only IT Admin can modify groups/permissions
+        if is_it_admin:
+            # Handle group assignments
+            selected_groups = request.POST.getlist('groups')
+            user.groups.clear()
+            for group_id in selected_groups:
+                try:
+                    group = Group.objects.get(id=group_id)
+                    user.groups.add(group)
+                except Group.DoesNotExist:
+                    pass
         
         messages.success(request, f'User account updated for {employee.full_name}.')
         return redirect(reverse('employees:detail', kwargs={'pk': pk}))
@@ -118,21 +140,35 @@ class EmployeeListView(View):
     def get(self, request):
         employees = list_employees()
 
-        # Scope restriction for regular users (see only coworkers in the same direct assignment)
-        # Only attempt to use request.user in ORM filters when the user is authenticated.
-        if request.user.is_authenticated and not request.user.is_superuser and not request.user.groups.filter(name__in=['HR Admin', 'IT Admin']).exists():
+        # If the cached helper returned a materialized list (cache hit),
+        # convert to a queryset so downstream code can call .filter() etc.
+        # This keeps compatibility while still using caching for the base set.
+        if isinstance(employees, list):
+            pks = [e.pk for e in employees]
+            employees = Employee.objects.filter(pk__in=pks)
+
+        # Scope restriction for regular users
+        # IT Admin and Superuser: see all
+        # HR Admin: see all (but only in their direction for non-admins)
+        # Regular users and Managers: see only people in the same direction
+        if request.user.is_authenticated and not request.user.is_superuser and not request.user.groups.filter(name='IT Admin').exists():
             emp = getattr(request.user, 'employee_profile', None)
-            scope_q = Q()
-            # include self only when authenticated
-            scope_q |= Q(user_id=request.user.id)
-            if emp:
-                if emp.service_id:
-                    scope_q |= Q(service_id=emp.service_id)
-                elif emp.division_id:
-                    scope_q |= Q(division_id=emp.division_id, service__isnull=True)
-                elif emp.direction_id:
-                    scope_q |= Q(direction_id=emp.direction_id, division__isnull=True, service__isnull=True)
-            employees = employees.filter(scope_q)
+            
+            # Check if HR Admin - they can see everyone
+            is_hr_admin = request.user.groups.filter(name='HR Admin').exists()
+            
+            if not is_hr_admin:
+                # Regular users and managers: restrict to same direction only
+                scope_q = Q()
+                if emp and emp.direction_id:
+                    scope_q = Q(direction_id=emp.direction_id)
+                else:
+                    # No employee profile or no direction: restrict to none except self
+                    if emp:
+                        scope_q = Q(user_id=request.user.id)
+                    else:
+                        scope_q = Q(pk__in=[])
+                employees = employees.filter(scope_q)
         
         # Search functionality (support both 'search' and 'q' parameters)
         search_query = (request.GET.get('search') or request.GET.get('q') or '').strip()
@@ -260,7 +296,14 @@ class EmployeeDetailView(View):
             if not allowed:
                 messages.error(request, 'You are not allowed to view this employee.')
                 return redirect('employees:list')
-        return render(request, 'employees/detail.html', {'employee': employee})
+        
+        # Get available groups for IT Admin
+        available_groups = Group.objects.all() if (request.user.is_superuser or request.user.groups.filter(name='IT Admin').exists()) else []
+        
+        return render(request, 'employees/detail.html', {
+            'employee': employee,
+            'available_groups': available_groups
+        })
 
 
 class EmployeeCreateView(PermissionRequiredMixin, View):
@@ -294,9 +337,16 @@ class EmployeeCreateView(PermissionRequiredMixin, View):
                         last_name=employee.last_name,
                         password='rabat2025'
                     )
-                    messages.info(request, f'Login created for {email} with temporary password.')
+                    # Auto-assign Normal User role
+                    try:
+                        from django.contrib.auth.models import Group
+                        normal_user_group = Group.objects.get(name='Normal User')
+                        user.groups.add(normal_user_group)
+                    except Group.DoesNotExist:
+                        pass  # Role not created yet
+                    messages.info(request, f'Login created for {username} with temporary password (assigned Normal User role).')
                 else:
-                    messages.info(request, f'User {email} already exists; linked to employee.')
+                    messages.info(request, f'User {username} already exists; linked to employee.')
                 # Link
                 if not employee.user:
                     employee.user = user
@@ -339,3 +389,41 @@ class EmployeeDeleteView(PermissionRequiredMixin, View):
         delete_employee(employee)
         messages.success(request, f'Employee {employee_name} deleted successfully!')
         return redirect(reverse('employees:list'))
+
+
+# API Views for cascading dropdowns
+class GetDivisionsAPIView(View):
+    """Return divisions for a given direction"""
+    def get(self, request):
+        direction_id = request.GET.get('direction_id')
+        if not direction_id:
+            return JsonResponse({'divisions': []})
+        cache_key = CacheKeys.DIVISIONS_BY_DIRECTION.format(id=direction_id)
+        divisions = cache.get(cache_key)
+        if divisions is None:
+            divisions = list(Division.objects.filter(direction_id=direction_id, is_active=True).values('id', 'name'))
+            cache.set(cache_key, divisions, CacheTTL.LONG)
+        return JsonResponse({'divisions': divisions})
+
+
+class GetServicesAPIView(View):
+    """Return services for a given direction or division"""
+    def get(self, request):
+        direction_id = request.GET.get('direction_id')
+        division_id = request.GET.get('division_id')
+        if division_id:
+            cache_key = CacheKeys.SERVICES_BY_DIVISION.format(id=division_id)
+            services = cache.get(cache_key)
+            if services is None:
+                services = list(Service.objects.filter(division_id=division_id, is_active=True).values('id', 'name'))
+                cache.set(cache_key, services, CacheTTL.LONG)
+            return JsonResponse({'services': services})
+        elif direction_id:
+            cache_key = CacheKeys.SERVICES_BY_DIRECTION.format(id=direction_id)
+            services = cache.get(cache_key)
+            if services is None:
+                services = list(Service.objects.filter(direction_id=direction_id, division__isnull=True, is_active=True).values('id', 'name'))
+                cache.set(cache_key, services, CacheTTL.LONG)
+            return JsonResponse({'services': services})
+        else:
+            return JsonResponse({'services': []})

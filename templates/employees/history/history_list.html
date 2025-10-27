@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load roles_extras %}
+
+{% block title %}Historique d'Emploi - {{ employee.full_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2><i class="fas fa-history"></i> Historique d'Emploi</h2>
+                <a href="{% url 'employees:detail' employee.pk %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Retour au Profil
+                </a>
+            </div>
+            
+            <!-- Employee Info Card -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">{{ employee.full_name }}</h5>
+                    <p class="mb-1"><strong>Matricule:</strong> {{ employee.employee_id }}</p>
+                    <p class="mb-1"><strong>Grade:</strong> {{ employee.grade|default:"N/A" }}</p>
+                    <p class="mb-1"><strong>Échelle:</strong> {{ employee.echelle|default:"N/A" }} | <strong>Échelon:</strong> {{ employee.echelon|default:"N/A" }}</p>
+                    <p class="mb-0"><strong>Statut:</strong> 
+                        {% if employee.status == 'active' %}
+                            <span class="badge bg-success">Actif</span>
+                        {% elif employee.status == 'retired' %}
+                            <span class="badge bg-secondary">Retraité</span>
+                        {% elif employee.status == 'on_leave' %}
+                            <span class="badge bg-warning">En Congé</span>
+                        {% elif employee.status == 'terminated' %}
+                            <span class="badge bg-danger">Terminé</span>
+                        {% else %}
+                            <span class="badge bg-info">{{ employee.get_status_display }}</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Add Entry Buttons (Admin only) -->
+            {% if request.user.is_superuser or request.user|has_group:'IT Admin' or request.user|has_group:'HR Admin' %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h6 class="mb-3">Ajouter une Entrée:</h6>
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'employees:history_create' employee.pk %}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-plus"></i> Historique Général
+                        </a>
+                        <a href="{% url 'employees:grade_change' employee.pk %}" class="btn btn-sm btn-info">
+                            <i class="fas fa-level-up-alt"></i> Changement de Grade
+                        </a>
+                        <a href="{% url 'employees:contract_create' employee.pk %}" class="btn btn-sm btn-success">
+                            <i class="fas fa-file-contract"></i> Contrat
+                        </a>
+                        <a href="{% url 'employees:retirement_create' employee.pk %}" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-user-clock"></i> Retraite
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Timeline -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-timeline"></i> Chronologie</h5>
+                </div>
+                <div class="card-body">
+                    {% if history_entries %}
+                    <div class="timeline">
+                        {% for entry in history_entries %}
+                        <div class="timeline-item mb-4">
+                            <div class="row">
+                                <div class="col-md-2 text-end">
+                                    <small class="text-muted">{{ entry.effective_date|date:"d/m/Y" }}</small>
+                                </div>
+                                <div class="col-md-1 text-center">
+                                    <div class="timeline-marker">
+                                        {% if entry.change_type == 'grade' %}
+                                            <i class="fas fa-star text-warning"></i>
+                                        {% elif entry.change_type == 'echelle' %}
+                                            <i class="fas fa-chart-line text-info"></i>
+                                        {% elif entry.change_type == 'echelon' %}
+                                            <i class="fas fa-level-up-alt text-success"></i>
+                                        {% elif entry.change_type == 'contract' %}
+                                            <i class="fas fa-file-signature text-primary"></i>
+                                        {% elif entry.change_type == 'contract_renewal' %}
+                                            <i class="fas fa-redo text-success"></i>
+                                        {% elif entry.change_type == 'contract_end' %}
+                                            <i class="fas fa-times-circle text-danger"></i>
+                                        {% elif entry.change_type == 'retirement' %}
+                                            <i class="fas fa-user-clock text-secondary"></i>
+                                        {% elif entry.change_type == 'titularisation' %}
+                                            <i class="fas fa-certificate text-success"></i>
+                                        {% else %}
+                                            <i class="fas fa-circle text-muted"></i>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h6 class="card-title">
+                                                {{ entry.get_change_type_display }}
+                                                {% if entry.is_approved %}
+                                                    <span class="badge bg-success ms-2">Approuvé</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning ms-2">En Attente</span>
+                                                {% endif %}
+                                            </h6>
+                                            <p class="card-text mb-2">{{ entry.change_summary }}</p>
+                                            
+                                            {% if entry.notes %}
+                                            <p class="card-text"><small><strong>Notes:</strong> {{ entry.notes }}</small></p>
+                                            {% endif %}
+                                            
+                                            {% if entry.document_reference %}
+                                            <p class="card-text"><small><strong>Réf. Document:</strong> {{ entry.document_reference }}</small></p>
+                                            {% endif %}
+                                            
+                                            {% if entry.created_by %}
+                                            <p class="card-text"><small class="text-muted">Créé par: {{ entry.created_by.get_full_name|default:entry.created_by.username }}</small></p>
+                                            {% endif %}
+                                            
+                                            <!-- Actions (Admin only) -->
+                                            {% if request.user.is_superuser or request.user|has_group:'IT Admin' or request.user|has_group:'HR Admin' %}
+                                            <div class="mt-2">
+                                                <a href="{% url 'employees:history_edit' entry.pk %}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-edit"></i> Modifier
+                                                </a>
+                                                {% if request.user.is_superuser or request.user|has_group:'IT Admin' %}
+                                                <form method="post" action="{% url 'employees:history_delete' entry.pk %}" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette entrée ?');">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                        <i class="fas fa-trash"></i> Supprimer
+                                                    </button>
+                                                </form>
+                                                {% endif %}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Aucune entrée d'historique trouvée pour cet employé.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 16.66%;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #dee2e6;
+}
+
+.timeline-marker {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: white;
+    border: 2px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    position: relative;
+    z-index: 1;
+}
+</style>
+{% endblock %}

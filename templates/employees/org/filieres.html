@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% load roles_extras %}
+
+{% block title %}Filières{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-mortarboard"></i> Filières</h2>
+    {% if request.user.is_superuser or request.user|has_group:'IT Admin' %}
+    <a href="{% url 'employees:org_filiere_create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-circle"></i> Nouvelle Filière
+    </a>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Nom</th>
+            <th>Département</th>
+            <th>Description</th>
+            <th>Statut</th>
+            {% if request.user.is_superuser or request.user|has_group:'IT Admin' %}
+            <th>Actions</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for filiere in filieres %}
+          <tr>
+            <td><strong>{{ filiere.code }}</strong></td>
+            <td>{{ filiere.name }}</td>
+            <td>{{ filiere.departement.name }}</td>
+            <td>{{ filiere.description|truncatewords:10|default:'-' }}</td>
+            <td>
+              {% if filiere.is_active %}
+                <span class="badge bg-success">Actif</span>
+              {% else %}
+                <span class="badge bg-secondary">Inactif</span>
+              {% endif %}
+            </td>
+            {% if request.user.is_superuser or request.user|has_group:'IT Admin' %}
+            <td>
+              <a href="{% url 'employees:org_filiere_edit' filiere.pk %}" class="btn btn-sm btn-outline-primary" title="Modifier">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <form method="post" action="{% url 'employees:org_filiere_delete' filiere.pk %}" style="display:inline;" onsubmit="return confirm('Supprimer cette filière?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </td>
+            {% endif %}
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center text-muted">Aucune filière trouvée.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

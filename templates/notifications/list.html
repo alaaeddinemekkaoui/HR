@@ -3,11 +3,21 @@
 {% block content %}
 <div class="card">
   <div class="card-header d-flex justify-content-between align-items-center">
-    <span>Notifications</span>
-    <form method="post" action="{% url 'notifications:mark_all_read' %}">
-      {% csrf_token %}
-      <button class="btn btn-sm btn-outline-secondary">Mark all as read</button>
-    </form>
+    <span><i class="bi bi-bell"></i> Notifications</span>
+    <div>
+      <form method="post" action="{% url 'notifications:mark_all_read' %}" class="d-inline">
+        {% csrf_token %}
+        <button class="btn btn-sm btn-outline-secondary" type="submit">
+          <i class="bi bi-check-all"></i> Tout marquer comme lu
+        </button>
+      </form>
+      <form method="post" action="{% url 'notifications:clear_all' %}" class="d-inline ms-2" onsubmit="return confirm('Êtes-vous sûr de vouloir effacer toutes les notifications? Cette action ne peut pas être annulée.');">
+        {% csrf_token %}
+        <button class="btn btn-sm btn-outline-danger" type="submit">
+          <i class="bi bi-trash"></i> Tout effacer
+        </button>
+      </form>
+    </div>
   </div>
   <div class="list-group list-group-flush">
     {% for n in notifications %}
@@ -19,7 +29,7 @@
         <small class="text-muted">{{ n.created_at|date:'Y-m-d H:i' }}</small>
       </a>
     {% empty %}
-      <div class="list-group-item text-muted">No notifications</div>
+      <div class="list-group-item text-muted">Aucune notification</div>
     {% endfor %}
   </div>
 </div>

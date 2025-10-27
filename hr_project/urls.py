@@ -3,7 +3,7 @@ from django.urls import path, include
 from django.views.generic import RedirectView
 
 urlpatterns = [
-    path('', RedirectView.as_view(pattern_name='employees:list', permanent=False)),
+    path('', RedirectView.as_view(pattern_name='admin_dashboard:index', permanent=False)),
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
     path('employees/', include('apps.employees.urls', namespace='employees')),

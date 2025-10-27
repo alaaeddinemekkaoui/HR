@@ -4,7 +4,12 @@
 {% block content %}
 <div class="container" style="max-width: 900px;">
   <div class="d-print-none d-flex justify-content-end mb-3">
-    <button class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimer</button>
+    <a href="{% url 'documents:decision_conge_pdf' leave.id %}" class="btn btn-danger me-2">
+      <i class="bi bi-file-pdf"></i> Télécharger PDF
+    </a>
+    <button class="btn btn-outline-secondary" onclick="window.print()">
+      <i class="bi bi-printer"></i> Imprimer
+    </button>
   </div>
   <div class="card shadow-sm border-0">
     <div class="card-body p-5">

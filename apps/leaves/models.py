@@ -81,3 +81,20 @@ class LeaveRequest(models.Model):
             d += timedelta(days=1)
         self.days = total
         return self.days
+
+
+class LeaveRequestHistory(models.Model):
+    leave_request = models.ForeignKey(LeaveRequest, on_delete=models.CASCADE, related_name='history')
+    previous_status = models.CharField(max_length=20, blank=True)
+    new_status = models.CharField(max_length=20)
+    action_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    comment = models.TextField(blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+        verbose_name_plural = 'Leave Request Histories'
+
+    def __str__(self):
+        return f"{self.leave_request.employee} - {self.previous_status} → {self.new_status} by {self.action_by} at {self.timestamp}"

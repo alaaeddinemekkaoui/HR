@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from apps.employees.models import Direction, Division, Service, Grade, Position
+from apps.employees.models import Direction, Division, Service, Departement, Filiere, Grade, Position
 
 
 class Command(BaseCommand):
@@ -56,36 +56,61 @@ class Command(BaseCommand):
         ]
         
         for grade_data in grades_data:
-            grade, created = Grade.objects.get_or_create(
-                code=grade_data['code'],
-                defaults=grade_data
-            )
-            if created:
-                self.stdout.write(self.style.SUCCESS(f'  ✓ Created grade: {grade.name}'))
+            try:
+                grade, created = Grade.objects.get_or_create(
+                    code=grade_data['code'],
+                    defaults=grade_data
+                )
+                if created:
+                    self.stdout.write(self.style.SUCCESS(f'  ✓ Created grade: {grade.name}'))
+                else:
+                    # Update if exists
+                    for key, value in grade_data.items():
+                        setattr(grade, key, value)
+                    grade.save()
+                    self.stdout.write(f'  - Updated grade: {grade.name}')
+            except Exception as e:
+                self.stdout.write(self.style.WARNING(f'  ! Grade {grade_data["code"]} exists: {str(e)}'))
         
         self.stdout.write('Seeding Positions...')
         positions_data = [
-            {'name': 'Directeur', 'code': 'DIR', 'position_type': 'chef_direction'},
+            {'name': 'Directeur', 'code': 'DIR', 'position_type': 'directeur'},
+            {'name': 'Chef de Direction', 'code': 'CHEF_DIR', 'position_type': 'chef_direction'},
+            {'name': 'Chef Adjoint', 'code': 'CHEF_ADJ', 'position_type': 'chef_adjoint'},
             {'name': 'Chef de Division', 'code': 'CHEF_DIV', 'position_type': 'chef_division'},
             {'name': 'Chef de Service', 'code': 'CHEF_SRV', 'position_type': 'chef_service'},
+            {'name': 'Chef de Département', 'code': 'CHEF_DEPT', 'position_type': 'chef_departement'},
+            {'name': 'Chef de Filière', 'code': 'CHEF_FIL', 'position_type': 'chef_filiere'},
+            {'name': 'Inspecteur', 'code': 'INSP', 'position_type': 'inspecteur'},
             {'name': 'Ingénieur', 'code': 'ING', 'position_type': 'employee'},
+            {'name': 'Professeur', 'code': 'PROF', 'position_type': 'employee'},
             {'name': 'Technicien', 'code': 'TECH', 'position_type': 'employee'},
             {'name': 'Secrétaire', 'code': 'SEC', 'position_type': 'employee'},
             {'name': 'Agent Administratif', 'code': 'AG_ADM', 'position_type': 'employee'},
         ]
         
         for pos_data in positions_data:
-            position, created = Position.objects.get_or_create(
-                code=pos_data['code'],
-                defaults=pos_data
-            )
-            if created:
-                self.stdout.write(self.style.SUCCESS(f'  ✓ Created position: {position.name}'))
+            try:
+                position, created = Position.objects.get_or_create(
+                    code=pos_data['code'],
+                    defaults=pos_data
+                )
+                if created:
+                    self.stdout.write(self.style.SUCCESS(f'  ✓ Created position: {position.name}'))
+                else:
+                    # Update if exists
+                    for key, value in pos_data.items():
+                        setattr(position, key, value)
+                    position.save()
+                    self.stdout.write(f'  - Updated position: {position.name}')
+            except Exception as e:
+                self.stdout.write(self.style.WARNING(f'  ! Position {pos_data["code"]} error: {str(e)}'))
         
         self.stdout.write('Seeding Directions...')
         directions_data = [
             {'name': 'Direction Générale', 'code': 'DG'},
             {'name': 'Secrétariat Général', 'code': 'SG'},
+            {'name': 'Direction des Études', 'code': 'DE'},
         ]
         
         for dir_data in directions_data:
@@ -98,26 +123,129 @@ class Command(BaseCommand):
         
         self.stdout.write('Seeding Divisions and Services...')
         
-        # Direction des Systèmes d'Information
-        dsi = Direction.objects.get(code='SG')
-        Service.objects.get_or_create(  
+        # Secrétariat Général - IT Service
+        sg = Direction.objects.get(code='SG')
+        Service.objects.get_or_create(
+            direction=sg,
             code='IT',
             defaults={'name': 'Service Informatique'}
         )
 
-
-        # Direction des Études
+        # Direction des Études - Divisions and Services
         de = Direction.objects.get(code='DE')
         
-        div_etud, _ = Division.objects.get_or_create(
+        div_scol, _ = Division.objects.get_or_create(
             direction=de,
             code='SCOL',
-            defaults={'name': 'Responsable Scolarité'}
+            defaults={'name': 'Division Scolarité'}
         )
         
-        # Secrétariat Général
-        sg = Direction.objects.get(code='SG')
+        Service.objects.get_or_create(
+            division=div_scol,
+            code='INSCR',
+            defaults={'name': 'Service Inscriptions'}
+        )
         
+        # Départements for Direction des Études only
+        self.stdout.write('Seeding Départements for Direction des Études...')
+        
+        dept_info, _ = Departement.objects.get_or_create(
+            direction=de,
+            code='INFO',
+            defaults={
+                'name': 'Département Informatique',
+                'description': 'Département des sciences informatiques'
+            }
+        )
+        
+        dept_genie, _ = Departement.objects.get_or_create(
+            direction=de,
+            code='GENIE',
+            defaults={
+                'name': 'Département Génie Civil',
+                'description': 'Département de génie civil et construction'
+            }
+        )
+        
+        dept_agro, _ = Departement.objects.get_or_create(
+            direction=de,
+            code='AGRO',
+            defaults={
+                'name': 'Département Agronomie',
+                'description': 'Département des sciences agronomiques'
+            }
+        )
+        
+        # Filières under Départements
+        self.stdout.write('Seeding Filières...')
+        
+        # Département Informatique
+        Filiere.objects.get_or_create(
+            departement=dept_info,
+            code='GL',
+            defaults={
+                'name': 'Filière Génie Logiciel',
+                'description': 'Formation en développement de logiciels'
+            }
+        )
+        
+        Filiere.objects.get_or_create(
+            departement=dept_info,
+            code='IA',
+            defaults={
+                'name': 'Filière Intelligence Artificielle',
+                'description': 'Formation en IA et data science'
+            }
+        )
+        
+        Filiere.objects.get_or_create(
+            departement=dept_info,
+            code='CYBER',
+            defaults={
+                'name': 'Filière Cybersécurité',
+                'description': 'Formation en sécurité informatique'
+            }
+        )
+        
+        # Département Génie Civil
+        Filiere.objects.get_or_create(
+            departement=dept_genie,
+            code='BTP',
+            defaults={
+                'name': 'Filière Bâtiment et Travaux Publics',
+                'description': 'Formation en construction et infrastructure'
+            }
+        )
+        
+        Filiere.objects.get_or_create(
+            departement=dept_genie,
+            code='STRUCT',
+            defaults={
+                'name': 'Filière Structures',
+                'description': 'Formation en calcul et conception de structures'
+            }
+        )
+        
+        # Département Agronomie
+        Filiere.objects.get_or_create(
+            departement=dept_agro,
+            code='PA',
+            defaults={
+                'name': 'Filière Production Agricole',
+                'description': 'Formation en production végétale et animale'
+            }
+        )
+        
+        Filiere.objects.get_or_create(
+            departement=dept_agro,
+            code='IAA',
+            defaults={
+                'name': 'Filière Industries Agroalimentaires',
+                'description': 'Formation en transformation alimentaire'
+            }
+        )
+        
+        # Secrétariat Général - Division Administrative
         div_adm, _ = Division.objects.get_or_create(
             direction=sg,
             code='ADM',

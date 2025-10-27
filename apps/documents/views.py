@@ -1,9 +1,10 @@
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, HttpResponse
 from django.utils import timezone
 from django.contrib.auth.models import User
+from django.template.loader import render_to_string
 from apps.employees.models import Employee
 from apps.leaves.models import LeaveRequest
 from apps.leaves.utils import find_supervisors_for, approvals_scope_q_for_user
@@ -12,6 +13,12 @@ from django.template import Template, Context
 import datetime
 from .models import DocumentTemplate
 from .forms import DocumentTemplateForm
+
+try:
+    from weasyprint import HTML
+    WEASYPRINT_AVAILABLE = True
+except ImportError:
+    WEASYPRINT_AVAILABLE = False
 
 
 def user_is_hr_or_admin(user: User) -> bool:
@@ -231,3 +238,133 @@ class TemplateRenderView(LoginRequiredMixin, View):
             'template_obj': tmpl,
             'rendered': rendered,
         })
+
+
+# PDF Download Views
+class AttestationTravailPDFView(LoginRequiredMixin, View):
+    def get(self, request, employee_id: int):
+        if not WEASYPRINT_AVAILABLE:
+            return HttpResponse("PDF generation not available. Install weasyprint.", status=500)
+        
+        emp = get_object_or_404(Employee, pk=employee_id)
+        # Permissions: HR/Admin can view any; otherwise only self
+        if not user_is_hr_or_admin(request.user):
+            if not hasattr(request.user, 'employee_profile') or request.user.employee_profile.id != emp.id:
+                return HttpResponseForbidden('Not allowed')
+        
+        context = {
+            'employee': emp,
+            'today': timezone.now().date(),
+        }
+        html_string = render_to_string('documents/attestation_travail.html', context)
+        html = HTML(string=html_string, base_url=request.build_absolute_uri())
+        pdf = html.write_pdf()
+        
+        response = HttpResponse(pdf, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="attestation_travail_{emp.employee_id}.pdf"'
+        return response
+
+
+class DecisionCongePDFView(LoginRequiredMixin, View):
+    def get(self, request, leave_id: int):
+        if not WEASYPRINT_AVAILABLE:
+            return HttpResponse("PDF generation not available. Install weasyprint.", status=500)
+        
+        leave = get_object_or_404(LeaveRequest, pk=leave_id)
+        # Permissions: owner, HR/Admin, or supervisor within scope
+        allowed = False
+        if user_is_hr_or_admin(request.user):
+            allowed = True
+        elif hasattr(request.user, 'employee_profile') and leave.employee_id == request.user.employee_profile.id:
+            allowed = True
+        else:
+            scope_q = approvals_scope_q_for_user(request.user)
+            if scope_q != Q(pk__in=[]) and LeaveRequest.objects.filter(scope_q, pk=leave.id).exists():
+                allowed = True
+        if not allowed:
+            return HttpResponseForbidden('Not allowed')
+
+        # Get supervisor for signature
+        supervisor_user = None
+        sup_users = find_supervisors_for(leave.employee)
+        if sup_users:
+            supervisor_user = sup_users[0]
+        supervisor_emp = getattr(supervisor_user, 'employee_profile', None) if supervisor_user else None
+        
+        context = {
+            'leave': leave,
+            'employee': leave.employee,
+            'supervisor': supervisor_emp,
+            'today': timezone.now().date(),
+        }
+        html_string = render_to_string('documents/decision_conge.html', context)
+        html = HTML(string=html_string, base_url=request.build_absolute_uri())
+        pdf = html.write_pdf()
+        
+        response = HttpResponse(pdf, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="decision_conge_{leave.id}.pdf"'
+        return response
+
+
+class AttestationSalairePDFView(LoginRequiredMixin, View):
+    def get(self, request, employee_id: int):
+        if not WEASYPRINT_AVAILABLE:
+            return HttpResponse("PDF generation not available. Install weasyprint.", status=500)
+        
+        emp = get_object_or_404(Employee, pk=employee_id)
+        # Permissions: HR/Admin can view any; otherwise only self
+        if not user_is_hr_or_admin(request.user):
+            if not hasattr(request.user, 'employee_profile') or request.user.employee_profile.id != emp.id:
+                return HttpResponseForbidden('Not allowed')
+        
+        gross = request.GET.get('gross')
+        net = request.GET.get('net')
+        
+        if not gross or not net:
+            return HttpResponse("Missing salary parameters (gross, net)", status=400)
+        
+        context = {
+            'employee': emp,
+            'gross': gross,
+            'net': net,
+            'today': timezone.now().date(),
+        }
+        html_string = render_to_string('documents/attestation_salaire.html', context)
+        html = HTML(string=html_string, base_url=request.build_absolute_uri())
+        pdf = html.write_pdf()
+        
+        response = HttpResponse(pdf, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="attestation_salaire_{emp.employee_id}.pdf"'
+        return response
+
+
+class AdminDocumentGeneratorView(UserPassesTestMixin, View):
+    """View for IT Admin/HR Admin to generate documents for any employee"""
+    
+    def test_func(self):
+        return self.request.user.is_superuser or self.request.user.groups.filter(name__in=['IT Admin', 'HR Admin']).exists()
+    
+    def get(self, request):
+        search_query = request.GET.get('search', '').strip()
+        employees = []
+        
+        if search_query:
+            # Search by name, employee_id, or PPR
+            employees = Employee.objects.filter(
+                Q(first_name__icontains=search_query) |
+                Q(last_name__icontains=search_query) |
+                Q(employee_id__icontains=search_query) |
+                Q(ppr__icontains=search_query)
+            ).select_related('position', 'grade', 'direction', 'division', 'service')[:20]
+        
+        # Get all active document templates
+        templates = DocumentTemplate.objects.filter(is_active=True).order_by('name')
+        
+        context = {
+            'search_query': search_query,
+            'employees': employees,
+            'templates': templates,
+        }
+        return render(request, 'documents/admin_generator.html', context)
+
+

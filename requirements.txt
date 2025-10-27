@@ -1,8 +1,16 @@
 Django>=4.2
 djangorestframework>=3.14
 djangorestframework-simplejwt>=5.2
-psycopg2-binary>=2.9
+mysqlclient>=2.2
 celery>=5.3
-redis>=4.5
+redis[hiredis]>=4.5  # Hiredis for fast C-based parsing
+django-redis>=5.4
 django-celery-results>=2.4
 python-dotenv>=1.0
+weasyprint>=60.0
+asgiref>=3.7  # Async support for Django
+aiomysql>=0.2.0  # Async MySQL driver
+uvloop>=0.19.0  # Ultra-fast async event loop (C-based)
+uvicorn[standard]>=0.24.0  # ASGI server with uvloop support
+
+
