@@ -119,9 +119,12 @@ class EmployeeListView(View):
         employees = list_employees()
 
         # Scope restriction for regular users (see only coworkers in the same direct assignment)
-        if not request.user.is_superuser and not request.user.groups.filter(name__in=['HR Admin', 'IT Admin']).exists():
+        # Only attempt to use request.user in ORM filters when the user is authenticated.
+        if request.user.is_authenticated and not request.user.is_superuser and not request.user.groups.filter(name__in=['HR Admin', 'IT Admin']).exists():
             emp = getattr(request.user, 'employee_profile', None)
-            scope_q = Q(user=request.user)  # always include self
+            scope_q = Q()
+            # include self only when authenticated
+            scope_q |= Q(user_id=request.user.id)
             if emp:
                 if emp.service_id:
                     scope_q |= Q(service_id=emp.service_id)
@@ -129,9 +132,6 @@ class EmployeeListView(View):
                     scope_q |= Q(division_id=emp.division_id, service__isnull=True)
                 elif emp.direction_id:
                     scope_q |= Q(direction_id=emp.direction_id, division__isnull=True, service__isnull=True)
-            else:
-                # No employee profile: restrict to none except self (which likely won't match if no link)
-                pass
             employees = employees.filter(scope_q)
         
         # Search functionality (support both 'search' and 'q' parameters)
@@ -194,11 +194,11 @@ class EmployeeListView(View):
         page_obj = paginator.get_page(page_number)
         
         # Dropdown choices (limit to user's scope for regular users)
-        if request.user.is_superuser or request.user.groups.filter(name__in=['HR Admin', 'IT Admin']).exists():
+        if request.user.is_authenticated and (request.user.is_superuser or request.user.groups.filter(name__in=['HR Admin', 'IT Admin']).exists()):
             directions = Direction.objects.filter(is_active=True).order_by('name')
             divisions = Division.objects.filter(is_active=True).order_by('name')
             services = Service.objects.filter(is_active=True).order_by('name')
-        else:
+        elif request.user.is_authenticated:
             emp = getattr(request.user, 'employee_profile', None)
             if emp and emp.service_id:
                 directions = Direction.objects.filter(pk=emp.direction_id, is_active=True)
@@ -216,6 +216,11 @@ class EmployeeListView(View):
                 directions = Direction.objects.none()
                 divisions = Division.objects.none()
                 services = Service.objects.none()
+        else:
+            # Anonymous users: no scope, return empty choices
+            directions = Direction.objects.none()
+            divisions = Division.objects.none()
+            services = Service.objects.none()
         
         context = {
             'page_obj': page_obj,
@@ -273,7 +278,13 @@ class EmployeeCreateView(PermissionRequiredMixin, View):
             # Auto-provision user account
             try:
                 email = employee.email.strip().lower()
-                username = email
+                # Username: employee full name without spaces (lowercased). Ensure uniqueness.
+                base_username = ''.join(employee.full_name.split()).lower()
+                username = base_username
+                i = 1
+                while User.objects.filter(username=username).exists():
+                    username = f"{base_username}{i}"
+                    i += 1
                 user = User.objects.filter(username=username).first()
                 if not user:
                     user = User.objects.create_user(

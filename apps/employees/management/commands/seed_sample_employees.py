@@ -29,7 +29,7 @@ class Command(BaseCommand):
             # first_name, last_name, email, cin, direction, division, service, position, grade, echelle
             ('Ahmed', 'El Mansouri', 'ahmed.mansouri@example.com', 'CIN10001', dg, drh, sgp, positions['CS'], grades['ING'], 10),
             ('Fatima', 'Zahra', 'fatima.zahra@example.com', 'CIN10002', de, None, scol, positions['ING-POS'], grades['ING'], 9),
-            ('Youssef', 'Bennani', 'youssef.bennani@example.com', 'CIN10003', dg, drh, sgp, positions['TECH-POS'], grades['TECH'], 7),
+            ('Youssef', 'Bennani', 'youssef.bennani@example.com', 'CIN10003', dg, drh, sgp, positions['TECH-POS'], grades['TECH2'], 7),
             ('Salma', 'Haddad', 'salma.haddad@example.com', 'CIN10004', de, None, None, positions['SEC-POS'], grades['SEC'], 5),
             ('Hassan', 'Amrani', 'hassan.amrani@example.com', 'CIN10005', dg, None, None, positions['CDIR'], grades['ING-P'], None),
         ]
@@ -66,10 +66,22 @@ class Command(BaseCommand):
                 created += 1
             # Auto-provision user
             if not emp.user:
-                user, _ = User.objects.get_or_create(username=email, defaults={'email': email, 'first_name': first, 'last_name': last})
-                user.set_password('rabat2025')
-                user.save()
+                # Username: employee full name without spaces (lowercased). Ensure uniqueness.
+                base_username = ''.join(emp.full_name.split()).lower()
+                username = base_username
+                i = 1
+                while User.objects.filter(username=username).exists():
+                    username = f"{base_username}{i}"
+                    i += 1
+                user = User.objects.create_user(
+                    username=username,
+                    email=email,
+                    first_name=first,
+                    last_name=last,
+                    password='rabat2025'
+                )
                 emp.user = user
                 emp.save()
+                self.stdout.write(f'  Created user: {username} (password: rabat2025)')
         
         self.stdout.write(self.style.SUCCESS(f'✅ Seeded {created} employees (others updated). Default password: rabat2025'))
