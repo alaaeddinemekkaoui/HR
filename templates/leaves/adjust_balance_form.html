@@ -1,21 +1,155 @@
 {% extends 'base.html' %}
 {% block title %}Modifier Solde{% endblock %}
 {% block content %}
-<div class="mb-4">
-  <h1 class="h3">Modifier le solde de congé</h1>
-  <p class="text-muted">Ajuster manuellement les jours pour {{ balance.employee.full_name }} — {{ balance.leave_type.name }} ({{ balance.year }})</p>
-</div>
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3 mb-1">Modifier le solde de congé</h1>
+      <p class="text-muted mb-0">
+        <i class="bi bi-person-fill"></i> {{ balance.employee.full_name }} • 
+        <i class="bi bi-calendar-event"></i> {{ balance.leave_type.name }} • 
+        <i class="bi bi-calendar3"></i> Année {{ balance.year }}
+      </p>
+    </div>
+    <a href="{% url 'employees:detail' balance.employee.id %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
 
-<div class="card">
-  <div class="card-body">
-    <form method="post">
-      {% csrf_token %}
-      {{ form.as_p }}
-      <div class="mt-3">
-        <button class="btn btn-primary">Enregistrer</button>
-        <a href="{% url 'leaves:my' %}" class="btn btn-secondary">Annuler</a>
+  <div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Ajustement Manuel</h5>
+    </div>
+    <div class="card-body">
+      <div class="alert alert-info border-0 mb-4">
+        <i class="bi bi-info-circle"></i> 
+        <strong>Note:</strong> Les modifications apporteront un ajustement immédiat au solde de congé. 
+        Assurez-vous que les valeurs sont correctes avant d'enregistrer.
       </div>
-    </form>
+
+      <form method="post">
+        {% csrf_token %}
+        
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="{{ form.opening.id_for_label }}" class="form-label">
+              <i class="bi bi-box-arrow-in-right"></i> Ouverture (jours)
+            </label>
+            {{ form.opening }}
+            {% if form.opening.errors %}
+              <div class="invalid-feedback d-block">{{ form.opening.errors }}</div>
+            {% endif %}
+            <small class="form-text text-muted">Solde initial au début de l'année</small>
+          </div>
+
+          <div class="col-md-6">
+            <label for="{{ form.accrued.id_for_label }}" class="form-label">
+              <i class="bi bi-plus-circle"></i> Acquis (jours)
+            </label>
+            {{ form.accrued }}
+            {% if form.accrued.errors %}
+              <div class="invalid-feedback d-block">{{ form.accrued.errors }}</div>
+            {% endif %}
+            <small class="form-text text-muted">Jours accumulés durant l'année</small>
+          </div>
+
+          <div class="col-md-6">
+            <label for="{{ form.used.id_for_label }}" class="form-label">
+              <i class="bi bi-dash-circle"></i> Utilisé (jours)
+            </label>
+            {{ form.used }}
+            {% if form.used.errors %}
+              <div class="invalid-feedback d-block">{{ form.used.errors }}</div>
+            {% endif %}
+            <small class="form-text text-muted">Jours de congé déjà pris</small>
+          </div>
+
+          <div class="col-md-6">
+            <label for="{{ form.carried_over.id_for_label }}" class="form-label">
+              <i class="bi bi-arrow-right-circle"></i> Report (jours)
+            </label>
+            {{ form.carried_over }}
+            {% if form.carried_over.errors %}
+              <div class="invalid-feedback d-block">{{ form.carried_over.errors }}</div>
+            {% endif %}
+            <small class="form-text text-muted">Jours reportés de l'année précédente</small>
+          </div>
+
+          <div class="col-md-6">
+            <label for="{{ form.expired.id_for_label }}" class="form-label">
+              <i class="bi bi-x-circle"></i> Expiré (jours)
+            </label>
+            {{ form.expired }}
+            {% if form.expired.errors %}
+              <div class="invalid-feedback d-block">{{ form.expired.errors }}</div>
+            {% endif %}
+            <small class="form-text text-muted">Jours expirés (non utilisables)</small>
+          </div>
+
+          <div class="col-md-6">
+            <label for="{{ form.closing.id_for_label }}" class="form-label">
+              <i class="bi bi-calculator"></i> Solde Final (jours)
+            </label>
+            {{ form.closing }}
+            {% if form.closing.errors %}
+              <div class="invalid-feedback d-block">{{ form.closing.errors }}</div>
+            {% endif %}
+            <small class="form-text text-muted">Solde disponible actuel</small>
+          </div>
+        </div>
+
+        <hr class="my-4">
+
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="text-muted small">
+            <i class="bi bi-shield-lock"></i> Réservé aux administrateurs HR et IT
+          </div>
+          <div class="d-flex gap-2">
+            <a href="{% url 'employees:detail' balance.employee.id %}" class="btn btn-secondary">
+              <i class="bi bi-x-circle"></i> Annuler
+            </a>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-save"></i> Enregistrer les modifications
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Current Balance Info -->
+  <div class="card mt-3 shadow-sm">
+    <div class="card-header bg-light">
+      <h6 class="mb-0"><i class="bi bi-info-circle"></i> Valeurs Actuelles</h6>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-2 text-center">
+          <div class="text-muted small">Ouverture</div>
+          <div class="h5 mb-0">{{ balance.opening }}</div>
+        </div>
+        <div class="col-md-2 text-center">
+          <div class="text-muted small">Acquis</div>
+          <div class="h5 mb-0 text-success">{{ balance.accrued }}</div>
+        </div>
+        <div class="col-md-2 text-center">
+          <div class="text-muted small">Utilisé</div>
+          <div class="h5 mb-0 text-danger">{{ balance.used }}</div>
+        </div>
+        <div class="col-md-2 text-center">
+          <div class="text-muted small">Report</div>
+          <div class="h5 mb-0 text-info">{{ balance.carried_over }}</div>
+        </div>
+        <div class="col-md-2 text-center">
+          <div class="text-muted small">Expiré</div>
+          <div class="h5 mb-0 text-warning">{{ balance.expired }}</div>
+        </div>
+        <div class="col-md-2 text-center">
+          <div class="text-muted small">Solde Final</div>
+          <div class="h5 mb-0 text-primary"><strong>{{ balance.closing }}</strong></div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}

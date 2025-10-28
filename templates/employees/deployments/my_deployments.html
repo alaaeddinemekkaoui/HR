@@ -1,0 +1,290 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mes Déplacements{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-route me-2"></i>Mes Déplacements</h2>
+            <p class="text-muted">Gérer vos déplacements forfaitaires, réels et ordres de mission</p>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Total Forfaitaire</h6>
+                            <h3 class="mb-0">{{ stats.forfaitaire_total|floatformat:2 }} DH</h3>
+                            <small class="text-muted">{{ stats.forfaitaire_count }} déplacement(s)</small>
+                        </div>
+                        <div class="text-primary">
+                            <i class="fas fa-calendar-alt fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Total Réel</h6>
+                            <h3 class="mb-0">{{ stats.real_total|floatformat:2 }} DH</h3>
+                            <small class="text-muted">{{ stats.real_count }} déplacement(s)</small>
+                        </div>
+                        <div class="text-success">
+                            <i class="fas fa-file-invoice-dollar fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Ordres Approuvés</h6>
+                            <h3 class="mb-0">{{ stats.ordres_approved }}</h3>
+                            <small class="text-success">Mission(s) validée(s)</small>
+                        </div>
+                        <div class="text-info">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Ordres En Attente</h6>
+                            <h3 class="mb-0">{{ stats.ordres_pending }}</h3>
+                            <small class="text-warning">Mission(s) en attente</small>
+                        </div>
+                        <div class="text-warning">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-3"><i class="fas fa-plus-circle me-2"></i>Nouvelle Demande</h5>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <a href="{% url 'employees:deployment_forfaitaire_create' %}" class="btn btn-primary w-100">
+                                <i class="fas fa-calendar-alt me-2"></i>Déplacement Forfaitaire
+                            </a>
+                            <small class="text-muted d-block mt-2">Indemnité mensuelle fixe - Pas d'approbation nécessaire</small>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{% url 'employees:ordre_mission_create' %}" class="btn btn-info w-100">
+                                <i class="fas fa-plane-departure me-2"></i>Ordre de Mission
+                            </a>
+                            <small class="text-muted d-block mt-2">Autorisation de déplacement - Nécessite approbation</small>
+                        </div>
+                        {% if user.is_superuser or user.groups.all.0.name in 'IT Admin,HR Admin' %}
+                        <div class="col-md-4">
+                            <a href="{% url 'employees:deployment_real_create' %}" class="btn btn-success w-100">
+                                <i class="fas fa-file-invoice-dollar me-2"></i>Déplacement Réel (RH)
+                            </a>
+                            <small class="text-muted d-block mt-2">Frais réels - Réservé aux RH</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs for different deployment types -->
+    <ul class="nav nav-tabs mb-3" id="deploymentTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="forfaitaire-tab" data-bs-toggle="tab" data-bs-target="#forfaitaire" type="button" role="tab">
+                <i class="fas fa-calendar-alt me-2"></i>Forfaitaires ({{ forfaitaires|length }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="ordres-tab" data-bs-toggle="tab" data-bs-target="#ordres" type="button" role="tab">
+                <i class="fas fa-plane-departure me-2"></i>Ordres de Mission ({{ ordres|length }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="real-tab" data-bs-toggle="tab" data-bs-target="#real" type="button" role="tab">
+                <i class="fas fa-file-invoice-dollar me-2"></i>Réels ({{ reals|length }})
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="deploymentTabContent">
+        <!-- Forfaitaire Tab -->
+        <div class="tab-pane fade show active" id="forfaitaire" role="tabpanel">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Déplacements Forfaitaires</h5>
+                    {% if forfaitaires %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Mois</th>
+                                    <th>Montant</th>
+                                    <th>Demandé le</th>
+                                    <th>Document</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for depl in forfaitaires %}
+                                <tr>
+                                    <td><i class="fas fa-calendar me-2"></i>{{ depl.month|date:"F Y" }}</td>
+                                    <td><strong>{{ depl.amount|floatformat:2 }} DH</strong></td>
+                                    <td>{{ depl.requested_at|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" disabled>
+                                            <i class="fas fa-file-pdf me-1"></i>Générer
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>Aucun déplacement forfaitaire enregistré.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Ordres de Mission Tab -->
+        <div class="tab-pane fade" id="ordres" role="tabpanel">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Ordres de Mission</h5>
+                    {% if ordres %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Période</th>
+                                    <th>Lieu</th>
+                                    <th>Objet</th>
+                                    <th>Statut</th>
+                                    <th>Document</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ordre in ordres %}
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-calendar-day me-2"></i>
+                                        {{ ordre.start_date|date:"d/m/Y" }} → {{ ordre.end_date|date:"d/m/Y" }}
+                                        <br><small class="text-muted">({{ ordre.calculate_days }} jour(s))</small>
+                                    </td>
+                                    <td><i class="fas fa-map-marker-alt me-2"></i>{{ ordre.location }}</td>
+                                    <td>{{ ordre.purpose|truncatewords:10 }}</td>
+                                    <td>
+                                        {% if ordre.status == 'pending' %}
+                                        <span class="badge bg-warning"><i class="fas fa-clock me-1"></i>En attente</span>
+                                        {% elif ordre.status == 'approved' %}
+                                        <span class="badge bg-success"><i class="fas fa-check me-1"></i>Approuvé</span>
+                                        {% elif ordre.status == 'rejected' %}
+                                        <span class="badge bg-danger"><i class="fas fa-times me-1"></i>Rejeté</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ ordre.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if ordre.ordre_document %}
+                                        <a href="{{ ordre.ordre_document.url }}" class="btn btn-sm btn-outline-info" target="_blank">
+                                            <i class="fas fa-paperclip me-1"></i>Voir preuve
+                                        </a>
+                                        {% endif %}
+                                        {% if ordre.status == 'approved' %}
+                                        <button class="btn btn-sm btn-outline-primary" disabled>
+                                            <i class="fas fa-file-pdf me-1"></i>Générer
+                                        </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>Aucun ordre de mission enregistré.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Real Deployments Tab -->
+        <div class="tab-pane fade" id="real" role="tabpanel">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Déplacements Réels</h5>
+                    {% if reals %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Période</th>
+                                    <th>Lieu</th>
+                                    <th>Taux/Jour</th>
+                                    <th>Jours</th>
+                                    <th>Total</th>
+                                    <th>Document</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for depl in reals %}
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-calendar-day me-2"></i>
+                                        {{ depl.start_date|date:"d/m/Y" }} → {{ depl.end_date|date:"d/m/Y" }}
+                                    </td>
+                                    <td><i class="fas fa-map-marker-alt me-2"></i>{{ depl.location }}</td>
+                                    <td>{{ depl.daily_rate|floatformat:2 }} DH</td>
+                                    <td>{{ depl.number_of_days }} jour(s)</td>
+                                    <td><strong>{{ depl.total_amount|floatformat:2 }} DH</strong></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" disabled>
+                                            <i class="fas fa-file-pdf me-1"></i>Générer
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>Aucun déplacement réel enregistré.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

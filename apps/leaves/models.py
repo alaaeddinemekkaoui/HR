@@ -26,7 +26,7 @@ class LeaveType(models.Model):
 
 class EmployeeLeaveBalance(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='leave_balances')
-    leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE)
+    leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE)  # Changed from PROTECT to CASCADE to allow deletion
     year = models.PositiveIntegerField()
     opening = models.DecimalField(max_digits=6, decimal_places=2, default=0)
     accrued = models.DecimalField(max_digits=6, decimal_places=2, default=0)
@@ -42,6 +42,77 @@ class EmployeeLeaveBalance(models.Model):
     def __str__(self):
         return f"{self.employee} - {self.leave_type} ({self.year})"
 
+    def calculate_monthly_accrual(self, months_worked=None):
+        """
+        Calculate accrued leave based on months worked.
+        Default: 1.5 days per month = 18 days per year (12 months)
+        For 22 days/year: 1.83 days per month
+        """
+        from decimal import Decimal
+        
+        if not self.leave_type.prorata_monthly:
+            # If not prorata, give full annual entitlement
+            return Decimal(str(self.leave_type.annual_days))
+        
+        if months_worked is None:
+            # Calculate months worked in the year based on employee hire date
+            from datetime import date
+            year_start = date(self.year, 1, 1)
+            year_end = date(self.year, 12, 31)
+            hire_date = self.employee.hire_date or year_start
+            
+            # If hired before year started, count full year
+            if hire_date <= year_start:
+                months_worked = 12
+            # If hired after year ended, no accrual
+            elif hire_date > year_end:
+                months_worked = 0
+            else:
+                # Count months from hire date to end of year
+                months_worked = 12 - hire_date.month + 1
+        
+        # Calculate monthly rate: annual_days / 12
+        monthly_rate = Decimal(str(self.leave_type.annual_days)) / Decimal('12')
+        accrued = monthly_rate * Decimal(str(months_worked))
+        
+        return accrued.quantize(Decimal('0.01'))
+
+    def recalculate_balance(self):
+        """
+        Recalculate the closing balance.
+        Formula: closing = opening + accrued + carried_over - used - expired
+        """
+        from decimal import Decimal
+        self.closing = (
+            Decimal(str(self.opening or 0)) +
+            Decimal(str(self.accrued or 0)) +
+            Decimal(str(self.carried_over or 0)) -
+            Decimal(str(self.used or 0)) -
+            Decimal(str(self.expired or 0))
+        )
+        return self.closing
+
+    def deduct_leave(self, days):
+        """
+        Deduct approved leave days from the balance.
+        Updates 'used' and recalculates closing balance.
+        """
+        from decimal import Decimal
+        self.used = (self.used or 0) + Decimal(str(days))
+        self.recalculate_balance()
+        self.save()
+
+    def calculate_expiration(self, current_year):
+        """
+        Calculate how many days should expire based on carry_over_years setting.
+        Only applies to old balances that exceeded the carry-over period.
+        """
+        years_old = current_year - self.year
+        if years_old > self.leave_type.carry_over_years:
+            # All remaining balance expires
+            return self.closing
+        return 0
+
 
 class LeaveRequest(models.Model):
     STATUS_CHOICES = [
@@ -51,7 +122,7 @@ class LeaveRequest(models.Model):
         ('cancelled', 'Cancelled'),
     ]
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='leave_requests')
-    leave_type = models.ForeignKey(LeaveType, on_delete=models.PROTECT)
+    leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE)  # Changed from PROTECT to CASCADE
     start_date = models.DateField()
     end_date = models.DateField()
     days = models.DecimalField(max_digits=5, decimal_places=2, default=0)
@@ -81,6 +152,28 @@ class LeaveRequest(models.Model):
             d += timedelta(days=1)
         self.days = total
         return self.days
+
+    def deduct_from_balance(self):
+        """
+        Automatically deduct approved leave from employee's balance.
+        Finds the balance for the leave request's year and leave type.
+        """
+        if self.status == 'approved' and self.days > 0:
+            year = self.start_date.year
+            balance, created = EmployeeLeaveBalance.objects.get_or_create(
+                employee=self.employee,
+                leave_type=self.leave_type,
+                year=year,
+                defaults={
+                    'opening': 0,
+                    'accrued': self.leave_type.annual_days,
+                    'used': 0,
+                    'carried_over': 0,
+                    'expired': 0,
+                    'closing': self.leave_type.annual_days,
+                }
+            )
+            balance.deduct_leave(self.days)
 
 
 class LeaveRequestHistory(models.Model):

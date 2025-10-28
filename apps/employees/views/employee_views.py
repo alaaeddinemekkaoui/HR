@@ -230,10 +230,26 @@ class EmployeeListView(View):
         page_obj = paginator.get_page(page_number)
         
         # Dropdown choices (limit to user's scope for regular users)
+        # Cache these queries since org structure rarely changes
         if request.user.is_authenticated and (request.user.is_superuser or request.user.groups.filter(name__in=['HR Admin', 'IT Admin']).exists()):
-            directions = Direction.objects.filter(is_active=True).order_by('name')
-            divisions = Division.objects.filter(is_active=True).order_by('name')
-            services = Service.objects.filter(is_active=True).order_by('name')
+            # Admin users see all - use cache
+            cache_key_dir = CacheKeys.ORG_DIRECTIONS_ALL
+            directions = cache.get(cache_key_dir)
+            if directions is None:
+                directions = list(Direction.objects.filter(is_active=True).order_by('name'))
+                cache.set(cache_key_dir, directions, CacheTTL.LONG)
+            
+            cache_key_div = CacheKeys.ORG_DIVISIONS_ALL
+            divisions = cache.get(cache_key_div)
+            if divisions is None:
+                divisions = list(Division.objects.filter(is_active=True).order_by('name'))
+                cache.set(cache_key_div, divisions, CacheTTL.LONG)
+            
+            cache_key_srv = CacheKeys.ORG_SERVICES_ALL
+            services = cache.get(cache_key_srv)
+            if services is None:
+                services = list(Service.objects.filter(is_active=True).order_by('name'))
+                cache.set(cache_key_srv, services, CacheTTL.LONG)
         elif request.user.is_authenticated:
             emp = getattr(request.user, 'employee_profile', None)
             if emp and emp.service_id:

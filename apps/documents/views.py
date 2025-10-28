@@ -349,13 +349,34 @@ class AdminDocumentGeneratorView(UserPassesTestMixin, View):
         employees = []
         
         if search_query:
-            # Search by name, employee_id, or PPR
-            employees = Employee.objects.filter(
-                Q(first_name__icontains=search_query) |
-                Q(last_name__icontains=search_query) |
-                Q(employee_id__icontains=search_query) |
-                Q(ppr__icontains=search_query)
-            ).select_related('position', 'grade', 'direction', 'division', 'service')[:20]
+            # Word-by-word progressive search
+            # Split search query into words and build OR conditions for each word
+            search_terms = search_query.split()
+            
+            # Start with base query
+            query = Q()
+            
+            # For each word, add OR conditions across all searchable fields
+            for term in search_terms:
+                if term:  # Skip empty strings
+                    query |= (
+                        Q(first_name__icontains=term) |
+                        Q(last_name__icontains=term) |
+                        Q(employee_id__icontains=term) |
+                        Q(ppr__icontains=term) |
+                        Q(cin__icontains=term) |
+                        Q(email__icontains=term) |
+                        Q(position__name__icontains=term) |
+                        Q(grade__name__icontains=term) |
+                        Q(direction__name__icontains=term) |
+                        Q(division__name__icontains=term) |
+                        Q(service__name__icontains=term)
+                    )
+            
+            # Execute search with related fields for efficiency
+            employees = Employee.objects.filter(query).select_related(
+                'position', 'grade', 'direction', 'division', 'service'
+            ).distinct().order_by('last_name', 'first_name')[:50]  # Limit to 50 results
         
         # Get all active document templates
         templates = DocumentTemplate.objects.filter(is_active=True).order_by('name')

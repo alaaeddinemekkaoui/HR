@@ -10,3 +10,10 @@ from .employee import (
     EmploymentHistory,
     GradeProgressionRule,
 )  # noqa: F401
+
+from .deployment import (
+    GradeDeploymentRate,
+    DeploymentForfaitaire,
+    DeploymentReal,
+    OrdreMission,
+)  # noqa: F401

@@ -11,11 +11,14 @@ class Direction(models.Model):
     name = models.CharField(max_length=200, unique=True)
     code = models.CharField(max_length=20, unique=True)
     description = models.TextField(blank=True)
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['name']
+        indexes = [
+            models.Index(fields=['is_active', 'name']),  # Filtered dropdown queries
+        ]
         verbose_name = 'Direction'
         verbose_name_plural = 'Directions'
 
@@ -29,12 +32,15 @@ class Division(models.Model):
     name = models.CharField(max_length=200)
     code = models.CharField(max_length=20)
     description = models.TextField(blank=True)
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['direction', 'name']
         unique_together = [['direction', 'code']]
+        indexes = [
+            models.Index(fields=['direction', 'is_active']),  # Cascading dropdown queries
+        ]
         verbose_name = 'Division'
         verbose_name_plural = 'Divisions'
 
@@ -49,12 +55,16 @@ class Service(models.Model):
     name = models.CharField(max_length=200)
     code = models.CharField(max_length=20)
     description = models.TextField(blank=True)
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['name']
         unique_together = [['division', 'code'], ['direction', 'code']]
+        indexes = [
+            models.Index(fields=['division', 'is_active']),   # Cascading dropdown by division
+            models.Index(fields=['direction', 'is_active']),  # Cascading dropdown by direction
+        ]
         verbose_name = 'Service'
         verbose_name_plural = 'Services'
 
@@ -198,6 +208,7 @@ class Employee(models.Model):
     # Personal Information
     first_name = models.CharField(max_length=100, verbose_name='Prénom')
     last_name = models.CharField(max_length=100, verbose_name='Nom')
+    profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True, verbose_name='Photo de profil')
     cin = models.CharField(max_length=20, unique=True, verbose_name='CIN')
     email = models.EmailField(unique=True, db_index=True)
     phone = models.CharField(
@@ -261,9 +272,21 @@ class Employee(models.Model):
     class Meta:
         ordering = ['-created_at']
         indexes = [
+            # Organizational filtering (most common queries)
             models.Index(fields=['direction', 'status']),
+            models.Index(fields=['division', 'status']),
+            models.Index(fields=['service', 'status']),
+            # Search and sorting
             models.Index(fields=['last_name', 'first_name']),
+            models.Index(fields=['employee_id']),  # Exact ID lookups
+            # Grade and progression queries
             models.Index(fields=['grade', 'echelle']),
+            models.Index(fields=['position']),
+            # Composite index for filtered lists
+            models.Index(fields=['direction', 'division', 'service']),
+            # Date-based queries
+            models.Index(fields=['-created_at']),  # Recent employees first
+            models.Index(fields=['hire_date']),    # Seniority queries
         ]
         verbose_name = 'Employé'
         verbose_name_plural = 'Employés'

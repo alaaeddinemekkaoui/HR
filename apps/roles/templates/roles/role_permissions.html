@@ -1,56 +1,434 @@
 {% extends 'base.html' %}
 {% block title %}Role Permissions{% endblock %}
 {% block content %}
-<h1 class="h3">Assign Permissions to: {{ role.group.name }}</h1>
-<p class="text-muted">{{ role.description }}</p>
-
-<form method="post" class="mt-3">
-  {% csrf_token %}
-  {% for module, funcs in modules.items %}
-  <div class="card mb-3">
-    <div class="card-header bg-light d-flex justify-content-between align-items-center">
-      <strong>{{ module|title }}</strong>
-      <div class="form-check form-check-inline">
-        <input class="form-check-input select-all" type="checkbox" id="select_all_{{ module }}" data-module="{{ module }}">
-        <label class="form-check-label" for="select_all_{{ module }}">Select all</label>
-      </div>
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3 mb-1">Assign Permissions to: <span class="text-primary">{{ role.group.name }}</span></h1>
+      <p class="text-muted mb-0">{{ role.description }}</p>
     </div>
-    <div class="card-body">
-      <div class="row">
-        {% for item in funcs %}
-        <div class="col-md-6 mb-2">
-          <div class="form-check">
-              <input class="form-check-input perm-checkbox" type="checkbox" name="functions" value="{{ item.function.id }}" id="func_{{ item.function.id }}" 
-                     data-module="{{ module }}" {% if item.assigned %}checked{% endif %}>
-            <label class="form-check-label" for="func_{{ item.function.id }}">
-              <strong>{{ item.function.name }}</strong>
-              <br><small class="text-muted">{{ item.function.description }}</small>
-            </label>
+    <div>
+      <a class="btn btn-outline-secondary" href="{% url 'roles:role_list' %}">
+        <i class="bi bi-arrow-left"></i> Back to Roles
+      </a>
+    </div>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    
+    {% if modules %}
+      <!-- Employee Management Section -->
+      {% if modules.employees %}
+      <div class="card mb-3 shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-people-fill"></i> Employee Management</h5>
+          <div class="form-check form-check-inline mb-0">
+            <input class="form-check-input select-all bg-white" type="checkbox" id="select_all_employees" data-module="employees">
+            <label class="form-check-label text-white" for="select_all_employees">Select All</label>
           </div>
         </div>
-        {% endfor %}
+        <div class="card-body">
+          <div class="row">
+            {% for item in modules.employees %}
+            <div class="col-md-6 col-lg-4 mb-3">
+              <div class="form-check">
+                <input class="form-check-input perm-checkbox" type="checkbox" name="functions" value="{{ item.function.id }}" id="func_{{ item.function.id }}" 
+                       data-module="employees" {% if item.assigned %}checked{% endif %}>
+                <label class="form-check-label" for="func_{{ item.function.id }}">
+                  <strong>{{ item.function.name }}</strong>
+                  <br><small class="text-muted">{{ item.function.description }}</small>
+                </label>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-  {% empty %}
-  <div class="alert alert-warning">No functions available. Run <code>python manage.py seed_functions</code> to initialize.</div>
-  {% endfor %}
+      {% endif %}
 
-  <div class="mt-3 d-flex gap-2">
-    <button class="btn btn-primary">Save</button>
-    <a class="btn btn-secondary" href="{% url 'roles:role_list' %}">Cancel</a>
-  </div>
+      <!-- Grades & Positions Section -->
+      {% if modules.grades %}
+      <div class="card mb-3 shadow-sm">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-bar-chart-steps"></i> Grades & Positions</h5>
+          <div class="form-check form-check-inline mb-0">
+            <input class="form-check-input select-all bg-white" type="checkbox" id="select_all_grades" data-module="grades">
+            <label class="form-check-label text-white" for="select_all_grades">Select All</label>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            {% for item in modules.grades %}
+            <div class="col-md-6 col-lg-4 mb-3">
+              <div class="form-check">
+                <input class="form-check-input perm-checkbox" type="checkbox" name="functions" value="{{ item.function.id }}" id="func_{{ item.function.id }}" 
+                       data-module="grades" {% if item.assigned %}checked{% endif %}>
+                <label class="form-check-label" for="func_{{ item.function.id }}">
+                  <strong>{{ item.function.name }}</strong>
+                  <br><small class="text-muted">{{ item.function.description }}</small>
+                </label>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Organization Structure Section -->
+      {% if modules.organization %}
+      <div class="card mb-3 shadow-sm">
+        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-diagram-3-fill"></i> Organization Structure</h5>
+          <div class="form-check form-check-inline mb-0">
+            <input class="form-check-input select-all bg-white" type="checkbox" id="select_all_organization" data-module="organization">
+            <label class="form-check-label text-white" for="select_all_organization">Select All</label>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            {% for item in modules.organization %}
+            <div class="col-md-6 col-lg-4 mb-3">
+              <div class="form-check">
+                <input class="form-check-input perm-checkbox" type="checkbox" name="functions" value="{{ item.function.id }}" id="func_{{ item.function.id }}" 
+                       data-module="organization" {% if item.assigned %}checked{% endif %}>
+                <label class="form-check-label" for="func_{{ item.function.id }}">
+                  <strong>{{ item.function.name }}</strong>
+                  <br><small class="text-muted">{{ item.function.description }}</small>
+                </label>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Career Progression Section -->
+      {% if modules.progression %}
+      <div class="card mb-3 shadow-sm">
+        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-graph-up-arrow"></i> Career Progression</h5>
+          <div class="form-check form-check-inline mb-0">
+            <input class="form-check-input select-all bg-white" type="checkbox" id="select_all_progression" data-module="progression">
+            <label class="form-check-label text-white" for="select_all_progression">Select All</label>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            {% for item in modules.progression %}
+            <div class="col-md-6 col-lg-4 mb-3">
+              <div class="form-check">
+                <input class="form-check-input perm-checkbox" type="checkbox" name="functions" value="{{ item.function.id }}" id="func_{{ item.function.id }}" 
+                       data-module="progression" {% if item.assigned %}checked{% endif %}>
+                <label class="form-check-label" for="func_{{ item.function.id }}">
+                  <strong>{{ item.function.name }}</strong>
+                  <br><small class="text-muted">{{ item.function.description }}</small>
+                </label>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Deployment Management Section -->
+      {% if modules.deployments %}
+      <div class="card mb-3 shadow-sm">
+        <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-geo-alt-fill"></i> Deployment Management</h5>
+          <div class="form-check form-check-inline mb-0">
+            <input class="form-check-input select-all" type="checkbox" id="select_all_deployments" data-module="deployments">
+            <label class="form-check-label" for="select_all_deployments">Select All</label>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="text-muted mb-3">
+            <small>
+              <strong>Note:</strong> Deployment permissions are categorized by type: 
+              <span class="badge bg-warning text-dark">Forfaitaire</span>, 
+              <span class="badge bg-warning text-dark">Real</span>, and 
+              <span class="badge bg-warning text-dark">Ordre de Mission</span>. 
+              Each type has specific permissions like view, create, edit, delete, approve, sign, and admin.
+            </small>
+          </p>
+          <div class="row">
+            {% for item in modules.deployments %}
+            <div class="col-md-6 col-lg-4 mb-3">
+              <div class="form-check">
+                <input class="form-check-input perm-checkbox" type="checkbox" name="functions" value="{{ item.function.id }}" id="func_{{ item.function.id }}" 
+                       data-module="deployments" {% if item.assigned %}checked{% endif %}>
+                <label class="form-check-label" for="func_{{ item.function.id }}">
+                  <strong>{{ item.function.name }}</strong>
+                  {% if 'admin' in item.function.code.lower %}
+                    <span class="badge bg-danger">Admin</span>
+                  {% elif 'sign' in item.function.code.lower %}
+                    <span class="badge bg-info">Sign</span>
+                  {% elif 'approve' in item.function.code.lower %}
+                    <span class="badge bg-success">Approve</span>
+                  {% endif %}
+                  <br><small class="text-muted">{{ item.function.description }}</small>
+                </label>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Leave Management Section -->
+      {% if modules.leaves %}
+      <div class="card mb-3 shadow-sm">
+        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-calendar-check-fill"></i> Leave Management</h5>
+          <div class="form-check form-check-inline mb-0">
+            <input class="form-check-input select-all bg-white" type="checkbox" id="select_all_leaves" data-module="leaves">
+            <label class="form-check-label text-white" for="select_all_leaves">Select All</label>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            {% for item in modules.leaves %}
+            <div class="col-md-6 col-lg-4 mb-3">
+              <div class="form-check">
+                <input class="form-check-input perm-checkbox" type="checkbox" name="functions" value="{{ item.function.id }}" id="func_{{ item.function.id }}" 
+                       data-module="leaves" {% if item.assigned %}checked{% endif %}>
+                <label class="form-check-label" for="func_{{ item.function.id }}">
+                  <strong>{{ item.function.name }}</strong>
+                  {% if 'admin' in item.function.code.lower %}
+                    <span class="badge bg-danger">Admin</span>
+                  {% elif 'approve' in item.function.code.lower %}
+                    <span class="badge bg-success">Approve</span>
+                  {% endif %}
+                  <br><small class="text-muted">{{ item.function.description }}</small>
+                </label>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Document Management Section -->
+      {% if modules.documents %}
+      <div class="card mb-3 shadow-sm">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-file-earmark-text-fill"></i> Document Management</h5>
+          <div class="form-check form-check-inline mb-0">
+            <input class="form-check-input select-all bg-white" type="checkbox" id="select_all_documents" data-module="documents">
+            <label class="form-check-label text-white" for="select_all_documents">Select All</label>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            {% for item in modules.documents %}
+            <div class="col-md-6 col-lg-4 mb-3">
+              <div class="form-check">
+                <input class="form-check-input perm-checkbox" type="checkbox" name="functions" value="{{ item.function.id }}" id="func_{{ item.function.id }}" 
+                       data-module="documents" {% if item.assigned %}checked{% endif %}>
+                <label class="form-check-label" for="func_{{ item.function.id }}">
+                  <strong>{{ item.function.name }}</strong>
+                  {% if 'admin' in item.function.code.lower %}
+                    <span class="badge bg-danger">Admin</span>
+                  {% endif %}
+                  <br><small class="text-muted">{{ item.function.description }}</small>
+                </label>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- User Management Section -->
+      {% if modules.users %}
+      <div class="card mb-3 shadow-sm">
+        <div class="card-header" style="background-color: #6f42c1; color: white;" class="d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-person-gear"></i> User Management</h5>
+          <div class="form-check form-check-inline mb-0">
+            <input class="form-check-input select-all bg-white" type="checkbox" id="select_all_users" data-module="users">
+            <label class="form-check-label text-white" for="select_all_users">Select All</label>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            {% for item in modules.users %}
+            <div class="col-md-6 col-lg-4 mb-3">
+              <div class="form-check">
+                <input class="form-check-input perm-checkbox" type="checkbox" name="functions" value="{{ item.function.id }}" id="func_{{ item.function.id }}" 
+                       data-module="users" {% if item.assigned %}checked{% endif %}>
+                <label class="form-check-label" for="func_{{ item.function.id }}">
+                  <strong>{{ item.function.name }}</strong>
+                  {% if 'admin' in item.function.code.lower %}
+                    <span class="badge bg-danger">Admin</span>
+                  {% endif %}
+                  <br><small class="text-muted">{{ item.function.description }}</small>
+                </label>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Role Management Section -->
+      {% if modules.roles %}
+      <div class="card mb-3 shadow-sm">
+        <div class="card-header" style="background-color: #e83e8c; color: white;" class="d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-shield-lock-fill"></i> Role Management</h5>
+          <div class="form-check form-check-inline mb-0">
+            <input class="form-check-input select-all bg-white" type="checkbox" id="select_all_roles" data-module="roles">
+            <label class="form-check-label text-white" for="select_all_roles">Select All</label>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            {% for item in modules.roles %}
+            <div class="col-md-6 col-lg-4 mb-3">
+              <div class="form-check">
+                <input class="form-check-input perm-checkbox" type="checkbox" name="functions" value="{{ item.function.id }}" id="func_{{ item.function.id }}" 
+                       data-module="roles" {% if item.assigned %}checked{% endif %}>
+                <label class="form-check-label" for="func_{{ item.function.id }}">
+                  <strong>{{ item.function.name }}</strong>
+                  {% if 'admin' in item.function.code.lower %}
+                    <span class="badge bg-danger">Admin</span>
+                  {% endif %}
+                  <br><small class="text-muted">{{ item.function.description }}</small>
+                </label>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Notifications Section -->
+      {% if modules.notifications %}
+      <div class="card mb-3 shadow-sm">
+        <div class="card-header" style="background-color: #20c997; color: white;" class="d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-bell-fill"></i> Notifications</h5>
+          <div class="form-check form-check-inline mb-0">
+            <input class="form-check-input select-all bg-white" type="checkbox" id="select_all_notifications" data-module="notifications">
+            <label class="form-check-label text-white" for="select_all_notifications">Select All</label>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            {% for item in modules.notifications %}
+            <div class="col-md-6 col-lg-4 mb-3">
+              <div class="form-check">
+                <input class="form-check-input perm-checkbox" type="checkbox" name="functions" value="{{ item.function.id }}" id="func_{{ item.function.id }}" 
+                       data-module="notifications" {% if item.assigned %}checked{% endif %}>
+                <label class="form-check-label" for="func_{{ item.function.id }}">
+                  <strong>{{ item.function.name }}</strong>
+                  {% if 'admin' in item.function.code.lower %}
+                    <span class="badge bg-danger">Admin</span>
+                  {% endif %}
+                  <br><small class="text-muted">{{ item.function.description }}</small>
+                </label>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Dashboard & Reports Section -->
+      {% if modules.dashboard or modules.reports %}
+      <div class="card mb-3 shadow-sm">
+        <div class="card-header" style="background-color: #fd7e14; color: white;" class="d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-graph-up"></i> Dashboard & Reports</h5>
+          <div class="form-check form-check-inline mb-0">
+            <input class="form-check-input select-all bg-white" type="checkbox" id="select_all_dashboard_reports" data-module="dashboard,reports">
+            <label class="form-check-label text-white" for="select_all_dashboard_reports">Select All</label>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            {% for item in modules.dashboard %}
+            <div class="col-md-6 col-lg-4 mb-3">
+              <div class="form-check">
+                <input class="form-check-input perm-checkbox" type="checkbox" name="functions" value="{{ item.function.id }}" id="func_{{ item.function.id }}" 
+                       data-module="dashboard" {% if item.assigned %}checked{% endif %}>
+                <label class="form-check-label" for="func_{{ item.function.id }}">
+                  <strong>{{ item.function.name }}</strong>
+                  <br><small class="text-muted">{{ item.function.description }}</small>
+                </label>
+              </div>
+            </div>
+            {% endfor %}
+            {% for item in modules.reports %}
+            <div class="col-md-6 col-lg-4 mb-3">
+              <div class="form-check">
+                <input class="form-check-input perm-checkbox" type="checkbox" name="functions" value="{{ item.function.id }}" id="func_{{ item.function.id }}" 
+                       data-module="reports" {% if item.assigned %}checked{% endif %}>
+                <label class="form-check-label" for="func_{{ item.function.id }}">
+                  <strong>{{ item.function.name }}</strong>
+                  {% if 'admin' in item.function.code.lower %}
+                    <span class="badge bg-danger">Admin</span>
+                  {% endif %}
+                  <br><small class="text-muted">{{ item.function.description }}</small>
+                </label>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+    {% else %}
+      <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle-fill"></i> 
+        No functions available. Run <code>python manage.py seed_functions</code> to initialize the permission system.
+      </div>
+    {% endif %}
+
+    <div class="mt-4 mb-5 d-flex gap-2">
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-save"></i> Save Permissions
+      </button>
+      <a class="btn btn-secondary" href="{% url 'roles:role_list' %}">
+        <i class="bi bi-x-circle"></i> Cancel
+      </a>
+    </div>
   </form>
+</div>
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+    // Handle select-all checkboxes
     document.querySelectorAll('.select-all').forEach(function(cb) {
       cb.addEventListener('change', function() {
-        const module = this.dataset.module;
+        const modules = this.dataset.module.split(',');
         const checked = this.checked;
-        document.querySelectorAll('.perm-checkbox[data-module="' + module + '"]').forEach(function(pc) {
-          pc.checked = checked;
+        modules.forEach(function(module) {
+          document.querySelectorAll('.perm-checkbox[data-module="' + module.trim() + '"]').forEach(function(pc) {
+            pc.checked = checked;
+          });
         });
+      });
+    });
+
+    // Update select-all checkbox state when individual checkboxes change
+    document.querySelectorAll('.perm-checkbox').forEach(function(pc) {
+      pc.addEventListener('change', function() {
+        const module = this.dataset.module;
+        const allCheckboxes = document.querySelectorAll('.perm-checkbox[data-module="' + module + '"]');
+        const checkedCheckboxes = document.querySelectorAll('.perm-checkbox[data-module="' + module + '"]:checked');
+        const selectAllCheckbox = document.getElementById('select_all_' + module);
+        
+        if (selectAllCheckbox) {
+          selectAllCheckbox.checked = allCheckboxes.length === checkedCheckboxes.length;
+        }
       });
     });
   });

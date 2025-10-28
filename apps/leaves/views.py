@@ -159,6 +159,12 @@ class LeaveApproveActionView(LoginRequiredMixin, View):
             req.approved_at = timezone.now()
             req.save()
             
+            # Automatically deduct from employee's leave balance
+            try:
+                req.deduct_from_balance()
+            except Exception as e:
+                messages.warning(request, f'Leave approved but balance update failed: {str(e)}')
+            
             # Create history entry
             LeaveRequestHistory.objects.create(
                 leave_request=req,
@@ -168,7 +174,7 @@ class LeaveApproveActionView(LoginRequiredMixin, View):
                 comment=comment or 'Leave request approved'
             )
             
-            messages.success(request, 'Leave approved.')
+            messages.success(request, f'Leave approved. {req.days} days deducted from balance.')
             # Notify employee
             if req.employee.user:
                 Notification.objects.create(
@@ -231,9 +237,9 @@ class LeaveRequestDeleteView(LoginRequiredMixin, View):
 
 
 class BalanceResetView(LoginRequiredMixin, UserPassesTestMixin, View):
-    """Reset employee leave balance (IT admin only)."""
+    """Reset employee leave balance (HR Admin and IT Admin)."""
     def test_func(self):
-        return self.request.user.is_superuser or self.request.user.groups.filter(name='IT Admin').exists()
+        return self.request.user.is_superuser or self.request.user.groups.filter(name__in=['IT Admin', 'HR Admin']).exists()
 
     def post(self, request, pk):
         bal = get_object_or_404(EmployeeLeaveBalance, pk=pk)
@@ -250,9 +256,9 @@ class BalanceResetView(LoginRequiredMixin, UserPassesTestMixin, View):
 
 
 class BalanceAdjustView(LoginRequiredMixin, UserPassesTestMixin, View):
-    """Allow IT admins to adjust a specific leave balance."""
+    """Allow HR Admin and IT Admin to adjust a specific leave balance."""
     def test_func(self):
-        return self.request.user.is_superuser or self.request.user.groups.filter(name='IT Admin').exists()
+        return self.request.user.is_superuser or self.request.user.groups.filter(name__in=['IT Admin', 'HR Admin']).exists()
 
     def get(self, request, pk):
         bal = get_object_or_404(EmployeeLeaveBalance, pk=pk)

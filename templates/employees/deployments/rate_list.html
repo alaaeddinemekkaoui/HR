@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Taux de Déplacement par Grade{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-money-bill-wave me-2"></i>Taux de Déplacement par Grade</h2>
+                    <p class="text-muted">Gestion des taux journaliers et mensuels forfaitaires</p>
+                </div>
+                <a href="{% url 'employees:deployment_rate_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Nouveau Taux
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            {% if rates %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Grade</th>
+                            <th>Taux Journalier</th>
+                            <th>Taux Mensuel Forfaitaire</th>
+                            <th>Date d'Effet</th>
+                            <th>Statut</th>
+                            <th>Créé par</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rate in rates %}
+                        <tr>
+                            <td>
+                                <strong>{{ rate.grade.name }}</strong><br>
+                                <small class="text-muted">Échelle {{ rate.grade.scale }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ rate.daily_rate|floatformat:2 }} DH/jour</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ rate.monthly_rate|floatformat:2 }} DH/mois</span>
+                            </td>
+                            <td>
+                                <i class="fas fa-calendar-day me-1"></i>
+                                {{ rate.effective_date|date:"d/m/Y" }}
+                            </td>
+                            <td>
+                                {% if rate.is_active %}
+                                <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Actif</span>
+                                {% else %}
+                                <span class="badge bg-secondary"><i class="fas fa-archive me-1"></i>Inactif</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ rate.created_by.get_full_name|default:rate.created_by.username }}<br>
+                                <small class="text-muted">{{ rate.created_at|date:"d/m/Y" }}</small>
+                            </td>
+                            <td>
+                                <a href="{% url 'employees:deployment_rate_edit' rate.pk %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-edit me-1"></i>Modifier
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>Aucun taux de déplacement configuré. 
+                <a href="{% url 'employees:deployment_rate_create' %}">Créer le premier taux</a>.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Info Box -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-info">
+                <div class="card-body">
+                    <h5 class="card-title text-info"><i class="fas fa-lightbulb me-2"></i>Comment ça marche ?</h5>
+                    <ul class="mb-0">
+                        <li><strong>Taux Journalier :</strong> Utilisé pour calculer les déplacements réels (nombre de jours × taux journalier)</li>
+                        <li><strong>Taux Mensuel Forfaitaire :</strong> Montant fixe mensuel pour les déplacements forfaitaires</li>
+                        <li><strong>Date d'Effet :</strong> Les taux sont appliqués à partir de cette date</li>
+                        <li><strong>Statut Actif :</strong> Seuls les taux actifs sont proposés lors de la création de déplacements</li>
+                        <li><strong>Historique :</strong> Les anciens taux restent visibles pour la traçabilité</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

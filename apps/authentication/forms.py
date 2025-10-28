@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
+from apps.employees.models import Employee
 
 
 class UserRegistrationForm(UserCreationForm):
@@ -50,3 +51,20 @@ class AccountSettingsForm(forms.ModelForm):
         if email and User.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
             raise forms.ValidationError('This email is already in use.')
         return email
+
+
+class ProfilePictureForm(forms.ModelForm):
+    """Form for uploading/updating profile picture"""
+    class Meta:
+        model = Employee
+        fields = ['profile_picture']
+        widgets = {
+            'profile_picture': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': 'image/*'
+            }),
+        }
+        labels = {
+            'profile_picture': 'Photo de profil'
+        }
+

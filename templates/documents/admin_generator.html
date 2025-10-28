@@ -22,16 +22,22 @@
             <!-- Search Form -->
             <div class="card mb-4">
                 <div class="card-body">
-                    <form method="get" class="row g-3">
+                    <form method="get" class="row g-3" id="searchForm">
                         <div class="col-md-10">
                             <input 
                                 type="text" 
                                 name="search" 
+                                id="searchInput"
                                 class="form-control form-control-lg" 
-                                placeholder="Rechercher par nom, matricule ou PPR..." 
+                                placeholder="Rechercher par nom, matricule, PPR, CIN, email, poste, grade ou organisation..." 
                                 value="{{ search_query }}"
+                                autocomplete="off"
                                 autofocus
                             >
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i> 
+                                Tapez n'importe quel mot - la recherche se fait mot par mot automatiquement
+                            </small>
                         </div>
                         <div class="col-md-2">
                             <button type="submit" class="btn btn-primary btn-lg w-100">
@@ -138,4 +144,39 @@
         </div>
     </div>
 </div>
+
+<script>
+// Auto-submit search form as user types (word-by-word search)
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const searchForm = document.getElementById('searchForm');
+    let typingTimer;
+    const typingDelay = 500; // Wait 500ms after user stops typing
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            // Clear previous timer
+            clearTimeout(typingTimer);
+            
+            const searchValue = searchInput.value.trim();
+            
+            // Auto-submit if user has typed at least 2 characters
+            if (searchValue.length >= 2) {
+                typingTimer = setTimeout(function() {
+                    searchForm.submit();
+                }, typingDelay);
+            }
+        });
+        
+        // Also submit on Enter key
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                clearTimeout(typingTimer);
+                searchForm.submit();
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

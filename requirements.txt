@@ -2,6 +2,7 @@ Django>=4.2
 djangorestframework>=3.14
 djangorestframework-simplejwt>=5.2
 mysqlclient>=2.2
+Pillow>=10.0  # For image handling (profile pictures)
 celery>=5.3
 redis[hiredis]>=4.5  # Hiredis for fast C-based parsing
 django-redis>=5.4

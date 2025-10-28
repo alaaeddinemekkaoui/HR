@@ -289,8 +289,8 @@
   </div>
 </div>
 
-<!-- Leave Balances Section (IT Admin Only) -->
-{% if request.user.is_superuser or request.user|has_group:'IT Admin' %}
+<!-- Leave Balances Section (IT Admin & HR Admin) -->
+{% if request.user.is_superuser or request.user|has_group:'IT Admin' or request.user|has_group:'HR Admin' %}
 <div class="card mb-3 border-0 shadow-sm" id="leave-balances">
   <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
     <h6 class="mb-0"><i class="bi bi-calendar-event text-primary"></i> Soldes de Congés</h6>
@@ -298,30 +298,35 @@
   <div class="card-body">
     {% if employee.leave_balances.all %}
     <div class="table-responsive">
-      <table class="table table-sm">
-        <thead>
+      <table class="table table-sm table-hover">
+        <thead class="table-light">
           <tr>
-            <th>Type</th>
+            <th>Type de Congé</th>
             <th>Année</th>
             <th>Ouverture</th>
             <th>Acquis</th>
             <th>Utilisé</th>
-            <th>Solde</th>
-            <th>Action</th>
+            <th>Report</th>
+            <th class="text-end">Solde</th>
+            <th class="text-center">Action</th>
           </tr>
         </thead>
         <tbody>
           {% for balance in employee.leave_balances.all %}
           <tr>
-            <td>{{ balance.leave_type.name }}</td>
-            <td>{{ balance.year }}</td>
+            <td><strong>{{ balance.leave_type.name }}</strong></td>
+            <td><span class="badge bg-secondary">{{ balance.year }}</span></td>
             <td>{{ balance.opening }}</td>
-            <td>{{ balance.accrued }}</td>
-            <td>{{ balance.used }}</td>
-            <td><strong>{{ balance.closing }}</strong></td>
-            <td>
+            <td><span class="text-success">+{{ balance.accrued }}</span></td>
+            <td><span class="text-danger">-{{ balance.used }}</span></td>
+            <td>{{ balance.carried_over }}</td>
+            <td class="text-end">
+              <strong class="text-primary fs-5">{{ balance.closing }}</strong> 
+              <small class="text-muted">jours</small>
+            </td>
+            <td class="text-center">
               <a href="{% url 'leaves:balance_adjust' balance.id %}" class="btn btn-sm btn-outline-primary" title="Modifier le solde">
-                <i class="bi bi-pencil"></i> Modifier
+                <i class="bi bi-pencil-square"></i> Ajuster
               </a>
             </td>
           </tr>
@@ -329,6 +334,71 @@
         </tbody>
       </table>
     </div>
+
+    <!-- Recent Leave Requests -->
+    <hr class="my-3">
+    <h6 class="mb-3"><i class="bi bi-clock-history text-info"></i> 3 Dernières Demandes de Congé</h6>
+    {% with recent_leaves=employee.leave_requests.all|slice:":3" %}
+    {% if recent_leaves %}
+    <div class="list-group">
+      {% for leave in recent_leaves %}
+      <div class="list-group-item list-group-item-action">
+        <div class="d-flex w-100 justify-content-between align-items-start">
+          <div class="flex-grow-1">
+            <h6 class="mb-1">
+              <i class="bi bi-calendar-check"></i> {{ leave.leave_type.name }}
+              {% if leave.status == 'pending' %}
+                <span class="badge bg-warning text-dark">En Attente</span>
+              {% elif leave.status == 'approved' %}
+                <span class="badge bg-success">Approuvé</span>
+              {% elif leave.status == 'rejected' %}
+                <span class="badge bg-danger">Rejeté</span>
+              {% elif leave.status == 'cancelled' %}
+                <span class="badge bg-secondary">Annulé</span>
+              {% endif %}
+            </h6>
+            <p class="mb-1 small text-muted">
+              <i class="bi bi-calendar-range"></i> 
+              Du {{ leave.start_date|date:"d/m/Y" }} au {{ leave.end_date|date:"d/m/Y" }}
+              <span class="ms-2">
+                <i class="bi bi-hourglass-split"></i> 
+                <strong>{{ leave.days }} jours</strong>
+              </span>
+            </p>
+            {% if leave.reason %}
+            <p class="mb-1 small"><i class="bi bi-chat-left-text"></i> {{ leave.reason|truncatewords:15 }}</p>
+            {% endif %}
+            {% if leave.approver %}
+            <p class="mb-0 small text-muted">
+              <i class="bi bi-person-check"></i> Approuvé par: {{ leave.approver.username }}
+              {% if leave.approved_at %}
+                le {{ leave.approved_at|date:"d/m/Y à H:i" }}
+              {% endif %}
+            </p>
+            {% endif %}
+          </div>
+          <div class="text-end ms-3">
+            <small class="text-muted d-block">{{ leave.created_at|date:"d/m/Y" }}</small>
+            <a href="{% url 'leaves:request_detail' leave.id %}" class="btn btn-sm btn-outline-secondary mt-1">
+              <i class="bi bi-eye"></i> Détails
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="mt-2 text-center">
+      <a href="{% url 'leaves:all_requests' %}?employee={{ employee.full_name }}" class="btn btn-sm btn-link">
+        <i class="bi bi-list-ul"></i> Voir toutes les demandes
+      </a>
+    </div>
+    {% else %}
+    <div class="alert alert-info border-0 mb-0">
+      <i class="bi bi-info-circle"></i> Aucune demande de congé trouvée.
+    </div>
+    {% endif %}
+    {% endwith %}
+
     {% else %}
     <p class="text-muted mb-0">Aucun solde de congé disponible.</p>
     {% endif %}

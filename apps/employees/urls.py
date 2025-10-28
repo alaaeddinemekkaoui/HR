@@ -37,6 +37,17 @@ from .views.history_views import (
     ContractCreateView,
     RetirementCreateView,
 )
+from .views.deployment_views import (
+    DeploymentListView,
+    DeploymentForfaitaireCreateView,
+    DeploymentRealCreateView,
+    OrdreMissionCreateView,
+    OrdreMissionApprovalListView,
+    OrdreMissionReviewView,
+    GradeDeploymentRateListView,
+    GradeDeploymentRateCreateView,
+    GradeDeploymentRateUpdateView,
+)
 
 app_name = 'employees'
 
@@ -93,4 +104,14 @@ urlpatterns = [
     path('<int:employee_id>/history/grade-change/', GradeChangeCreateView.as_view(), name='grade_change'),
     path('<int:employee_id>/history/contract/', ContractCreateView.as_view(), name='contract_create'),
     path('<int:employee_id>/history/retirement/', RetirementCreateView.as_view(), name='retirement_create'),
+    # Deployments (Déplacements)
+    path('deployments/', DeploymentListView.as_view(), name='deployments_list'),
+    path('deployments/forfaitaire/create/', DeploymentForfaitaireCreateView.as_view(), name='deployment_forfaitaire_create'),
+    path('deployments/real/create/', DeploymentRealCreateView.as_view(), name='deployment_real_create'),
+    path('deployments/ordre-mission/create/', OrdreMissionCreateView.as_view(), name='ordre_mission_create'),
+    path('deployments/approval/', OrdreMissionApprovalListView.as_view(), name='deployments_approval'),
+    path('deployments/ordre-mission/<int:pk>/review/', OrdreMissionReviewView.as_view(), name='ordre_mission_review'),
+    path('deployments/rates/', GradeDeploymentRateListView.as_view(), name='deployment_rates'),
+    path('deployments/rates/create/', GradeDeploymentRateCreateView.as_view(), name='deployment_rate_create'),
+    path('deployments/rates/<int:pk>/edit/', GradeDeploymentRateUpdateView.as_view(), name='deployment_rate_edit'),
  ]

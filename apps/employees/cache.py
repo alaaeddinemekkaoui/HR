@@ -15,6 +15,9 @@ class CacheKeys:
     EMPLOYEE_BY_DIRECTION = 'employees:direction:{id}'
     
     # Organizational structure
+    ORG_DIRECTIONS_ALL = 'org:directions:all'
+    ORG_DIVISIONS_ALL = 'org:divisions:all'
+    ORG_SERVICES_ALL = 'org:services:all'
     DIRECTIONS_ALL = 'org:directions:all'
     DIVISIONS_ALL = 'org:divisions:all'
     DIVISIONS_BY_DIRECTION = 'org:divisions:direction:{id}'

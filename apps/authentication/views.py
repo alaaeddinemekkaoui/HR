@@ -3,7 +3,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import login
-from .forms import UserRegistrationForm, AccountSettingsForm
+from .forms import UserRegistrationForm, AccountSettingsForm, ProfilePictureForm
 from django.contrib.auth.models import User, Group
 
 
@@ -105,7 +105,11 @@ class UserListView(LoginRequiredMixin, ITAdminOnlyMixin, View):
 class AccountSettingsView(LoginRequiredMixin, View):
     def get(self, request):
         form = AccountSettingsForm(instance=request.user)
-        return render(request, 'authentication/account_settings.html', {'form': form})
+        picture_form = ProfilePictureForm(instance=getattr(request.user, 'employee_profile', None))
+        return render(request, 'authentication/account_settings.html', {
+            'form': form,
+            'picture_form': picture_form
+        })
 
     def post(self, request):
         form = AccountSettingsForm(request.POST, instance=request.user)
@@ -113,4 +117,25 @@ class AccountSettingsView(LoginRequiredMixin, View):
             form.save()
             messages.success(request, 'Account settings updated.')
             return redirect('authentication:profile')
-        return render(request, 'authentication/account_settings.html', {'form': form})
+        picture_form = ProfilePictureForm(instance=getattr(request.user, 'employee_profile', None))
+        return render(request, 'authentication/account_settings.html', {
+            'form': form,
+            'picture_form': picture_form
+        })
+
+
+class UploadProfilePictureView(LoginRequiredMixin, View):
+    def post(self, request):
+        employee = getattr(request.user, 'employee_profile', None)
+        if not employee:
+            messages.error(request, 'No employee profile linked to your account.')
+            return redirect('authentication:profile')
+        
+        form = ProfilePictureForm(request.POST, request.FILES, instance=employee)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Photo de profil mise à jour avec succès!')
+            return redirect('authentication:profile')
+        else:
+            messages.error(request, 'Error uploading profile picture.')
+            return redirect('authentication:account')

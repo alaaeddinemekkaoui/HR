@@ -147,7 +147,7 @@ class GradeChangeCreateView(UserPassesTestMixin, View):
             'previous_echelle': employee.echelle,
             'previous_echelon': employee.echelon,
         }
-        form = GradeChangeForm(initial=initial_data)
+        form = GradeChangeForm(initial=initial_data, employee=employee)
         
         context = {
             'form': form,
@@ -158,7 +158,7 @@ class GradeChangeCreateView(UserPassesTestMixin, View):
     
     def post(self, request, employee_id: int):
         employee = get_object_or_404(Employee, pk=employee_id)
-        form = GradeChangeForm(request.POST)
+        form = GradeChangeForm(request.POST, employee=employee)
         
         if form.is_valid():
             # Determine change type
@@ -174,7 +174,7 @@ class GradeChangeCreateView(UserPassesTestMixin, View):
                 change_type=change_type,
                 effective_date=form.cleaned_data['effective_date'],
                 created_by=request.user,
-                notes=form.cleaned_data.get('notes', ''),
+                notes=form.cleaned_data.get('note', ''),
                 document_reference=form.cleaned_data.get('document_reference', ''),
             )
             
@@ -245,7 +245,7 @@ class ContractCreateView(UserPassesTestMixin, View):
                 contract_start_date=form.cleaned_data['contract_start_date'],
                 contract_end_date=form.cleaned_data.get('contract_end_date'),
                 created_by=request.user,
-                notes=form.cleaned_data.get('notes', ''),
+                notes=form.cleaned_data.get('note', ''),
                 document_reference=form.cleaned_data.get('document_reference', ''),
             )
             

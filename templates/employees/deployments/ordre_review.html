@@ -1,0 +1,249 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Examiner Ordre de Mission{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-11 mx-auto">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h4 class="mb-0">
+                        <i class="fas fa-clipboard-check me-2"></i>Examiner l'Ordre de Mission
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Employee Info -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5 class="text-primary mb-3">Informations de l'employé</h5>
+                            <table class="table table-sm">
+                                <tr>
+                                    <th width="40%">Nom complet :</th>
+                                    <td>{{ ordre.employee.full_name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Matricule :</th>
+                                    <td>{{ ordre.employee.registration_number }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Grade :</th>
+                                    <td>{{ ordre.employee.grade.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Service :</th>
+                                    <td>{{ ordre.employee.service|default:"N/A" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="text-info mb-3">Détails de la demande</h5>
+                            <table class="table table-sm">
+                                <tr>
+                                    <th width="40%">Demandé le :</th>
+                                    <td>{{ ordre.requested_at|date:"d/m/Y à H:i" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Demandé par :</th>
+                                    <td>{{ ordre.requested_by.get_full_name|default:ordre.requested_by.username }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Statut actuel :</th>
+                                    <td>
+                                        {% if ordre.status == 'pending' %}
+                                        <span class="badge bg-warning">En attente</span>
+                                        {% elif ordre.status == 'approved' %}
+                                        <span class="badge bg-success">Approuvé</span>
+                                        {% elif ordre.status == 'rejected' %}
+                                        <span class="badge bg-danger">Rejeté</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Mission Details -->
+                    <div class="mb-4">
+                        <h5 class="text-success mb-3">Détails de la mission</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Date de départ :</label>
+                                    <div class="form-control-plaintext">
+                                        <i class="fas fa-calendar-day me-2 text-primary"></i>
+                                        {{ ordre.start_date|date:"d/m/Y (l)" }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Date de retour :</label>
+                                    <div class="form-control-plaintext">
+                                        <i class="fas fa-calendar-day me-2 text-primary"></i>
+                                        {{ ordre.end_date|date:"d/m/Y (l)" }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Durée :</label>
+                                    <div class="form-control-plaintext">
+                                        <i class="fas fa-clock me-2 text-info"></i>
+                                        {{ ordre.calculate_days }} jour(s)
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Lieu de mission :</label>
+                                    <div class="form-control-plaintext">
+                                        <i class="fas fa-map-marker-alt me-2 text-danger"></i>
+                                        {{ ordre.location }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Objet de la mission :</label>
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            {{ ordre.purpose }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Document attachment -->
+                    {% if ordre.ordre_document %}
+                    <div class="mb-4">
+                        <h5 class="text-warning mb-3">Document justificatif</h5>
+                        <div class="card border-warning">
+                            <div class="card-body">
+                                <i class="fas fa-file-pdf me-2 text-danger"></i>
+                                <a href="{{ ordre.ordre_document.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-download me-2"></i>Télécharger le document joint
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Notes from employee -->
+                    {% if ordre.notes %}
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Notes de l'employé :</label>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                {{ ordre.notes }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <hr>
+
+                    <!-- Review Form -->
+                    {% if ordre.status == 'pending' %}
+                    <div class="mb-4">
+                        <h5 class="text-danger mb-3">Décision de la hiérarchie</h5>
+                        
+                        <form method="post">
+                            {% csrf_token %}
+                            
+                            {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                            {% endif %}
+
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label required fw-bold">{{ form.status.label }}</label>
+                                    {{ form.status }}
+                                    {% if form.status.errors %}
+                                    <div class="text-danger small mt-1">{{ form.status.errors.0 }}</div>
+                                    {% endif %}
+                                    {% if form.status.help_text %}
+                                    <div class="form-text">{{ form.status.help_text }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label fw-bold">{{ form.review_notes.label }}</label>
+                                    {{ form.review_notes }}
+                                    {% if form.review_notes.errors %}
+                                    <div class="text-danger small mt-1">{{ form.review_notes.errors.0 }}</div>
+                                    {% endif %}
+                                    {% if form.review_notes.help_text %}
+                                    <div class="form-text">{{ form.review_notes.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="mt-4 d-flex justify-content-between">
+                                <a href="{% url 'employees:deployments_approval' %}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Retour
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-check me-2"></i>Soumettre la Décision
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    {% else %}
+                    <!-- Already reviewed -->
+                    <div class="alert alert-info">
+                        <h5><i class="fas fa-info-circle me-2"></i>Décision déjà prise</h5>
+                        <table class="table table-sm mb-0 mt-3">
+                            <tr>
+                                <th width="20%">Décision :</th>
+                                <td>
+                                    {% if ordre.status == 'approved' %}
+                                    <span class="badge bg-success fs-6">Approuvé</span>
+                                    {% else %}
+                                    <span class="badge bg-danger fs-6">Rejeté</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Examiné par :</th>
+                                <td>{{ ordre.reviewed_by.get_full_name|default:ordre.reviewed_by.username }}</td>
+                            </tr>
+                            <tr>
+                                <th>Date :</th>
+                                <td>{{ ordre.reviewed_at|date:"d/m/Y à H:i" }}</td>
+                            </tr>
+                            {% if ordre.review_notes %}
+                            <tr>
+                                <th>Notes :</th>
+                                <td>{{ ordre.review_notes }}</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <a href="{% url 'employees:deployments_approval' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.required:after {
+    content: " *";
+    color: red;
+}
+</style>
+{% endblock %}

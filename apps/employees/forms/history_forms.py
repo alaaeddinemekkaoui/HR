@@ -35,7 +35,8 @@ class GradeChangeForm(forms.Form):
     new_grade = forms.ModelChoiceField(
         queryset=None,
         label='Nouveau grade',
-        widget=forms.Select(attrs={'class': 'form-select'})
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        required=False
     )
     previous_echelle = forms.IntegerField(
         required=False,
@@ -70,10 +71,13 @@ class GradeChangeForm(forms.Form):
 
     def __init__(self, *args, employee=None, **kwargs):
         super().__init__(*args, **kwargs)
+        # Always set the queryset, even if employee is None
+        from ..models import Grade
+        self.fields['new_grade'].queryset = Grade.objects.filter(is_active=True).order_by('name')
+        
+        # Set initial values if employee is provided
         if employee:
-            from ..models import Grade
-            self.fields['new_grade'].queryset = Grade.objects.filter(is_active=True).order_by('name')
-            self.fields['previous_grade'].initial = str(employee.grade)
+            self.fields['previous_grade'].initial = str(employee.grade) if employee.grade else ''
             self.fields['previous_echelle'].initial = employee.echelle
             self.fields['previous_echelon'].initial = employee.echelon
 

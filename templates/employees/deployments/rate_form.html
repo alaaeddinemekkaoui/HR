@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if mode == 'create' %}Nouveau Taux{% else %}Modifier Taux{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h4 class="mb-0">
+                        <i class="fas fa-money-bill-wave me-2"></i>
+                        {% if mode == 'create' %}Nouveau Taux de Déplacement{% else %}Modifier Taux de Déplacement{% endif %}
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    {% if mode == 'create' %}
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Définir les taux de déplacement pour un grade. Les taux actifs seront utilisés 
+                        automatiquement lors de la création de nouvelles demandes.
+                    </div>
+                    {% endif %}
+
+                    <form method="post" id="rateForm">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
+
+                        <div class="row g-3">
+                            <!-- Grade selection -->
+                            <div class="col-12">
+                                <label class="form-label required">{{ form.grade.label }}</label>
+                                {{ form.grade }}
+                                {% if form.grade.errors %}
+                                <div class="text-danger small mt-1">{{ form.grade.errors.0 }}</div>
+                                {% endif %}
+                                {% if form.grade.help_text %}
+                                <div class="form-text">{{ form.grade.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Daily rate -->
+                            <div class="col-md-6">
+                                <label class="form-label required">{{ form.daily_rate.label }}</label>
+                                <div class="input-group">
+                                    {{ form.daily_rate }}
+                                    <span class="input-group-text">DH/jour</span>
+                                </div>
+                                {% if form.daily_rate.errors %}
+                                <div class="text-danger small mt-1">{{ form.daily_rate.errors.0 }}</div>
+                                {% endif %}
+                                {% if form.daily_rate.help_text %}
+                                <div class="form-text">{{ form.daily_rate.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Monthly rate -->
+                            <div class="col-md-6">
+                                <label class="form-label required">{{ form.monthly_rate.label }}</label>
+                                <div class="input-group">
+                                    {{ form.monthly_rate }}
+                                    <span class="input-group-text">DH/mois</span>
+                                </div>
+                                {% if form.monthly_rate.errors %}
+                                <div class="text-danger small mt-1">{{ form.monthly_rate.errors.0 }}</div>
+                                {% endif %}
+                                {% if form.monthly_rate.help_text %}
+                                <div class="form-text">{{ form.monthly_rate.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Effective date -->
+                            <div class="col-md-6">
+                                <label class="form-label required">{{ form.effective_date.label }}</label>
+                                {{ form.effective_date }}
+                                {% if form.effective_date.errors %}
+                                <div class="text-danger small mt-1">{{ form.effective_date.errors.0 }}</div>
+                                {% endif %}
+                                {% if form.effective_date.help_text %}
+                                <div class="form-text">{{ form.effective_date.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Active status -->
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.is_active.label }}</label>
+                                <div class="form-check form-switch mt-2">
+                                    {{ form.is_active }}
+                                    <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                        Taux actif et utilisable
+                                    </label>
+                                </div>
+                                {% if form.is_active.errors %}
+                                <div class="text-danger small mt-1">{{ form.is_active.errors.0 }}</div>
+                                {% endif %}
+                                {% if form.is_active.help_text %}
+                                <div class="form-text">{{ form.is_active.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Notes -->
+                            <div class="col-12">
+                                <label class="form-label">{{ form.notes.label }}</label>
+                                {{ form.notes }}
+                                {% if form.notes.errors %}
+                                <div class="text-danger small mt-1">{{ form.notes.errors.0 }}</div>
+                                {% endif %}
+                                {% if form.notes.help_text %}
+                                <div class="form-text">{{ form.notes.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Preview calculation -->
+                        <div class="mt-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Aperçu des calculs</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <small class="text-muted">Exemple déplacement réel (5 jours) :</small>
+                                            <div id="realPreview" class="fw-bold">-</div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <small class="text-muted">Exemple forfaitaire (1 mois) :</small>
+                                            <div id="forfaitairePreview" class="fw-bold">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 d-flex justify-content-between">
+                            <a href="{% url 'employees:deployment_rates' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>{% if mode == 'create' %}Créer{% else %}Mettre à jour{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-control, .form-select {
+    border-radius: 0.375rem;
+    border: 1px solid #dee2e6;
+}
+.form-control:focus, .form-select:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+.required:after {
+    content: " *";
+    color: red;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dailyRateInput = document.querySelector('input[name="daily_rate"]');
+    const monthlyRateInput = document.querySelector('input[name="monthly_rate"]');
+    const realPreview = document.getElementById('realPreview');
+    const forfaitairePreview = document.getElementById('forfaitairePreview');
+
+    function updatePreview() {
+        const dailyRate = parseFloat(dailyRateInput.value) || 0;
+        const monthlyRate = parseFloat(monthlyRateInput.value) || 0;
+        
+        if (dailyRate > 0) {
+            realPreview.textContent = (dailyRate * 5).toFixed(2) + ' DH';
+        } else {
+            realPreview.textContent = '-';
+        }
+        
+        if (monthlyRate > 0) {
+            forfaitairePreview.textContent = monthlyRate.toFixed(2) + ' DH';
+        } else {
+            forfaitairePreview.textContent = '-';
+        }
+    }
+
+    if (dailyRateInput && monthlyRateInput) {
+        dailyRateInput.addEventListener('input', updatePreview);
+        monthlyRateInput.addEventListener('input', updatePreview);
+        updatePreview(); // Initial update
+    }
+});
+</script>
+{% endblock %}
