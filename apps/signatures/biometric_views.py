@@ -55,7 +55,9 @@ def register_biometric_device_view(request):
         messages.success(request, f'{device_type_name} registered! Awaiting admin verification.')
         return redirect('signatures:my_devices')
     
-    return render(request, 'signatures/register_device.html')
+    # Allow preselecting a device type via GET parameter (e.g., ?device_type=fingerprint_reader)
+    preselect = request.GET.get('device_type', '')
+    return render(request, 'signatures/register_device.html', {'preselect_device_type': preselect})
 
 
 @login_required

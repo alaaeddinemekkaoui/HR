@@ -139,6 +139,19 @@
   </div>
 
   {% if employee %}
+  <!-- Add Biometric Device (hardware-aware) -->
+  <div class="card mb-3">
+    <div class="card-header">Add Biometric Device</div>
+    <div class="card-body">
+      <p class="text-muted">Add a biometric device depending on what your browser and machine support.</p>
+      <div id="biometricOptions" class="d-flex gap-2 flex-wrap">
+        <button id="btnWebAuthn" class="btn btn-outline-primary" style="display:none;">Register Platform Biometric (Fingerprint/Face)</button>
+        <button id="btnWebUSB" class="btn btn-outline-primary" style="display:none;">Register USB Signature/Stamp</button>
+        <a id="btnManageDevices" href="{% url 'signatures:my_devices' %}" class="btn btn-outline-secondary">Manage Devices</a>
+      </div>
+      <div class="mt-2 text-muted small">Supported: WebAuthn (platform biometrics) and WebUSB (Chrome/Edge). Only compatible options are shown.</div>
+    </div>
+  </div>
   <!-- Supervisors (M+1 / M+2) -->
   <div class="card mb-3">
     <div class="card-header">Supervisors (M+1 / M+2)</div>
@@ -244,4 +257,40 @@
   {% endif %}
 </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const btnWebAuthn = document.getElementById('btnWebAuthn');
+  const btnWebUSB = document.getElementById('btnWebUSB');
+
+  // Detect WebAuthn (platform biometrics)
+  const hasWebAuthn = !!(window.PublicKeyCredential && navigator.credentials);
+  if (hasWebAuthn && btnWebAuthn) {
+    btnWebAuthn.style.display = 'inline-block';
+    btnWebAuthn.addEventListener('click', function() {
+      // Redirect to register device with fingerprint reader preselected
+      window.location = '{% url "signatures:register_device" %}?device_type=fingerprint_reader';
+    });
+  }
+
+  // Detect WebUSB for USB signature/stamp
+  const hasWebUSB = !!navigator.usb;
+  if (hasWebUSB && btnWebUSB) {
+    btnWebUSB.style.display = 'inline-block';
+    btnWebUSB.addEventListener('click', async function() {
+      try {
+        // Optionally request device to get a serial and then redirect to register
+        const device = await navigator.usb.requestDevice({ filters: [] });
+        // We will redirect and let the register page auto-detect using WebUSB again
+        window.location = '{% url "signatures:register_device" %}?device_type=usb_signature_pad';
+      } catch (e) {
+        // If user cancels, fallback to open register page
+        window.location = '{% url "signatures:register_device" %}?device_type=usb_signature_pad';
+      }
+    });
+  }
+});
+</script>
 {% endblock %}

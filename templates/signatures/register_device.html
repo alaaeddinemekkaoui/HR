@@ -146,6 +146,15 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // If server provided a preselected device type, set it now
+    const PRESELECT = '{{ preselect_device_type|default:"" }}';
+    if (PRESELECT) {
+        try { document.getElementById('device_type').value = PRESELECT; }
+        catch(e) {}
+        // Trigger change handler to show appropriate sections
+        const ev = new Event('change');
+        document.getElementById('device_type').dispatchEvent(ev);
+    }
     const deviceTypeSelect = document.getElementById('device_type');
     const detectDeviceBtn = document.getElementById('detectDeviceBtn');
     const detectionResult = document.getElementById('detectionResult');
