@@ -1,0 +1,297 @@
+{% extends 'base.html' %}
+
+{% block title %}Signature System Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-shield-lock"></i> Signature System Administration</h2>
+        <span class="badge bg-primary">IT Admin Access</span>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Signatures</h6>
+                            <h3>{{ stats.total_signatures }}</h3>
+                        </div>
+                        <i class="bi bi-pen" style="font-size: 48px; opacity: 0.3;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Pending Signatures</h6>
+                            <h3>{{ stats.pending_signatures }}</h3>
+                        </div>
+                        <i class="bi bi-hourglass-split" style="font-size: 48px; opacity: 0.3;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Signed Today</h6>
+                            <h3>{{ stats.signed_today }}</h3>
+                        </div>
+                        <i class="bi bi-check-circle" style="font-size: 48px; opacity: 0.3;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Active Devices</h6>
+                            <h3>{{ stats.active_devices }}</h3>
+                        </div>
+                        <i class="bi bi-usb-drive" style="font-size: 48px; opacity: 0.3;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Device Verifications -->
+    {% if pending_devices %}
+    <div class="card mb-4">
+        <div class="card-header bg-warning">
+            <h5 class="mb-0">
+                <i class="bi bi-exclamation-triangle"></i> 
+                Pending Device Verifications ({{ stats.pending_devices }})
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Device Type</th>
+                            <th>Device Name</th>
+                            <th>Serial</th>
+                            <th>Registered</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for device in pending_devices %}
+                        <tr>
+                            <td>
+                                <strong>{{ device.user.get_full_name|default:device.user.username }}</strong>
+                                <br><small class="text-muted">{{ device.user.username }}</small>
+                            </td>
+                            <td>
+                                {% if device.device_type == 'usb_signature_pad' %}
+                                    <i class="bi bi-usb-drive"></i>
+                                {% elif device.device_type == 'fingerprint_reader' %}
+                                    <i class="bi bi-fingerprint"></i>
+                                {% elif device.device_type == 'usb_stamp_device' %}
+                                    <i class="bi bi-shield-lock"></i>
+                                {% elif device.device_type == 'face_camera' %}
+                                    <i class="bi bi-camera-video"></i>
+                                {% endif %}
+                                {{ device.get_device_type_display }}
+                            </td>
+                            <td>{{ device.device_name }}</td>
+                            <td><code>{{ device.device_serial }}</code></td>
+                            <td>{{ device.registered_at|date:"Y-m-d H:i" }}</td>
+                            <td>
+                                <a href="{% url 'signatures:admin_verify_device' device.id %}" 
+                                   class="btn btn-sm btn-success"
+                                   onclick="return confirm('Verify this device for {{ device.user.username }}?');">
+                                    <i class="bi bi-check-circle"></i> Verify
+                                </a>
+                                <a href="{% url 'signatures:admin_deactivate_device' device.id %}" 
+                                   class="btn btn-sm btn-danger"
+                                   onclick="return confirm('Deactivate this device?');">
+                                    <i class="bi bi-x-circle"></i> Reject
+                                </a>
+                                <a href="/admin/signatures/biometricdevice/{{ device.id }}/change/" 
+                                   class="btn btn-sm btn-outline-primary" target="_blank">
+                                    <i class="bi bi-eye"></i> View Details
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Pending Stamp Artifacts -->
+    {% if pending_artifacts %}
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="bi bi-file-earmark-lock"></i> Pending Stamp Artifacts ({{ pending_artifacts|length }})</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Owner</th>
+                            <th>Filename</th>
+                            <th>MIME</th>
+                            <th>Size</th>
+                            <th>Uploaded</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for a in pending_artifacts %}
+                        <tr>
+                            <td>{{ a.owner.get_full_name|default:a.owner.username }}</td>
+                            <td>{{ a.original_filename }}</td>
+                            <td>{{ a.mime_type|default:'-' }}</td>
+                            <td>{{ a.file_size }} B</td>
+                            <td>{{ a.uploaded_at|date:"Y-m-d H:i" }}</td>
+                            <td>
+                                <a href="{% url 'signatures:admin_approve_artifact' a.id %}" class="btn btn-sm btn-success">Approve</a>
+                                <a href="{% url 'signatures:admin_artifacts' %}" class="btn btn-sm btn-outline-secondary">Manage</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Recent Signatures -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Signatures</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Signer</th>
+                                    <th>Type</th>
+                                    <th>Method</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sig in recent_signatures %}
+                                <tr>
+                                    <td><a href="{% url 'signatures:signature_detail' sig.id %}">#{{ sig.id }}</a></td>
+                                    <td>{{ sig.signer.get_full_name|default:sig.signer.username }}</td>
+                                    <td>{{ sig.get_signature_type_display }}</td>
+                                    <td>
+                                        {% if sig.signature_method == 'drawn' %}
+                                            <i class="bi bi-pencil"></i> Drawn
+                                        {% elif sig.signature_method == 'typed' %}
+                                            <i class="bi bi-keyboard"></i> Typed
+                                        {% elif sig.signature_method == 'usb_device' %}
+                                            <i class="bi bi-usb-drive"></i> USB
+                                        {% elif sig.signature_method == 'biometric' %}
+                                            <i class="bi bi-fingerprint"></i> Biometric
+                                        {% elif sig.signature_method == 'usb_stamp' %}
+                                            <i class="bi bi-shield-lock"></i> Stamp
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if sig.status == 'signed' %}
+                                            <span class="badge bg-success">Signed</span>
+                                        {% elif sig.status == 'pending' %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% elif sig.status == 'rejected' %}
+                                            <span class="badge bg-danger">Rejected</span>
+                                        {% elif sig.status == 'expired' %}
+                                            <span class="badge bg-secondary">Expired</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ sig.created_at|date:"Y-m-d H:i" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Signature Methods Statistics -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Signature Methods</h5>
+                </div>
+                <div class="card-body">
+                    {% if signature_methods %}
+                    <ul class="list-group list-group-flush">
+                        {% for method in signature_methods %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {% if method.signature_method == 'drawn' %}
+                                <span><i class="bi bi-pencil"></i> Drawn</span>
+                            {% elif method.signature_method == 'typed' %}
+                                <span><i class="bi bi-keyboard"></i> Typed</span>
+                            {% elif method.signature_method == 'usb_device' %}
+                                <span><i class="bi bi-usb-drive"></i> USB Device</span>
+                            {% elif method.signature_method == 'biometric' %}
+                                <span><i class="bi bi-fingerprint"></i> Biometric</span>
+                            {% elif method.signature_method == 'usb_stamp' %}
+                                <span><i class="bi bi-shield-lock"></i> USB Stamp</span>
+                            {% endif %}
+                            <span class="badge bg-primary rounded-pill">{{ method.count }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted text-center">No signature data yet</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-lightning"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="/admin/signatures/electronicsignature/" class="btn btn-outline-primary" target="_blank">
+                            <i class="bi bi-pen"></i> Manage All Signatures
+                        </a>
+                        <a href="/admin/signatures/biometricdevice/" class="btn btn-outline-primary" target="_blank">
+                            <i class="bi bi-usb-drive"></i> Manage All Devices
+                        </a>
+                        <a href="/admin/signatures/signatureauditlog/" class="btn btn-outline-primary" target="_blank">
+                            <i class="bi bi-file-text"></i> View Audit Logs
+                        </a>
+                        <a href="{% url 'signatures:my_requests' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to My Signatures
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

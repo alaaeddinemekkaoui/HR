@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+
+{% block title %}Signature Details{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-file-earmark-check"></i> Signature Details</h2>
+        <a href="{% url 'signatures:my_requests' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+
+    <!-- Signature Status -->
+    <div class="card mb-4">
+        <div class="card-header 
+            {% if signature.status == 'signed' %}bg-success text-white
+            {% elif signature.status == 'rejected' %}bg-danger text-white
+            {% elif signature.status == 'expired' %}bg-secondary text-white
+            {% else %}bg-warning text-dark{% endif %}">
+            <h5 class="mb-0">
+                {% if signature.status == 'signed' %}
+                    <i class="bi bi-check-circle"></i> Signed
+                {% elif signature.status == 'rejected' %}
+                    <i class="bi bi-x-circle"></i> Rejected
+                {% elif signature.status == 'expired' %}
+                    <i class="bi bi-clock"></i> Expired
+                {% else %}
+                    <i class="bi bi-hourglass"></i> Pending
+                {% endif %}
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Signer:</strong> {{ signature.signer.get_full_name }}</p>
+                    <p><strong>Signature Type:</strong> <span class="badge bg-info">{{ signature.get_signature_type_display }}</span></p>
+                    <p><strong>Document Type:</strong> {{ document_type|title }}</p>
+                    <p><strong>Document ID:</strong> #{{ signature.object_id }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Created:</strong> {{ signature.created_at|date:"Y-m-d H:i:s" }}</p>
+                    {% if signature.signed_at %}
+                    <p><strong>Signed:</strong> {{ signature.signed_at|date:"Y-m-d H:i:s" }}</p>
+                    {% endif %}
+                    {% if signature.expires_at %}
+                    <p><strong>Expires:</strong> {{ signature.expires_at|date:"Y-m-d H:i:s" }}</p>
+                    {% endif %}
+                    {% if signature.ip_address %}
+                    <p><strong>IP Address:</strong> {{ signature.ip_address }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if signature.comments %}
+            <hr>
+            <div class="alert alert-info">
+                <strong>Comments:</strong>
+                <p class="mb-0">{{ signature.comments }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Signature Display -->
+    {% if signature.status == 'signed' %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-pen-fill"></i> Signature</h5>
+        </div>
+        <div class="card-body">
+            {% if signature.signature_image %}
+            <div class="text-center">
+                <img src="{{ signature.signature_image }}" alt="Signature" class="img-fluid border" style="max-height: 200px;">
+            </div>
+            {% elif signature.signature_text %}
+            <div class="text-center">
+                <p style="font-family: 'Brush Script MT', cursive; font-size: 48px; margin: 0;">
+                    {{ signature.signature_text }}
+                </p>
+            </div>
+            {% endif %}
+
+            <!-- Verification -->
+            <hr>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>Signature Hash:</strong>
+                    <code class="small">{{ signature.signature_hash }}</code>
+                </div>
+                <div>
+                    {% if is_valid %}
+                    <span class="badge bg-success">
+                        <i class="bi bi-shield-check"></i> Verified
+                    </span>
+                    {% elif is_valid == False %}
+                    <span class="badge bg-danger">
+                        <i class="bi bi-shield-exclamation"></i> Invalid
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Document Information -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-file-text"></i> Document Information</h5>
+        </div>
+        <div class="card-body">
+            {% if document %}
+                {% if document_type == 'deploymentforfaitaire' or document_type == 'deploymentreal' or document_type == 'ordremission' %}
+                    <p><strong>Employee:</strong> {{ document.employee.full_name }}</p>
+                    <p><strong>Start Date:</strong> {{ document.start_date|date:"Y-m-d" }}</p>
+                    <p><strong>End Date:</strong> {{ document.end_date|date:"Y-m-d" }}</p>
+                    {% if document.destination %}
+                    <p><strong>Destination:</strong> {{ document.destination }}</p>
+                    {% endif %}
+                    {% if document.mission_purpose %}
+                    <p><strong>Purpose:</strong> {{ document.mission_purpose }}</p>
+                    {% endif %}
+                {% elif document_type == 'leaverequest' %}
+                    <p><strong>Employee:</strong> {{ document.employee.full_name }}</p>
+                    <p><strong>Leave Type:</strong> {{ document.leave_type.name }}</p>
+                    <p><strong>Start Date:</strong> {{ document.start_date|date:"Y-m-d" }}</p>
+                    <p><strong>End Date:</strong> {{ document.end_date|date:"Y-m-d" }}</p>
+                    <p><strong>Duration:</strong> {{ document.duration }} days</p>
+                    <p><strong>Status:</strong> 
+                        <span class="badge bg-{{ document.status|lower }}">{{ document.get_status_display }}</span>
+                    </p>
+                {% endif %}
+            {% else %}
+            <p class="text-muted">Document information not available</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Audit Log -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-list-check"></i> Audit Trail</h5>
+        </div>
+        <div class="card-body">
+            {% if audit_logs %}
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Action</th>
+                            <th>Actor</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in audit_logs %}
+                        <tr>
+                            <td>{{ log.timestamp|date:"Y-m-d H:i:s" }}</td>
+                            <td>
+                                <span class="badge bg-secondary">{{ log.get_action_display }}</span>
+                            </td>
+                            <td>{{ log.actor.get_full_name|default:"System" }}</td>
+                            <td>{{ log.details }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">No audit logs available</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

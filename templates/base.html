@@ -238,6 +238,38 @@
           </div>
         </div>
 
+        <!-- Signatures Section -->
+        <div class="sidebar-section">
+          <div class="sidebar-section-header" data-bs-toggle="collapse" data-bs-target="#signaturesSection">
+            <i class="bi bi-pen"></i>
+            <span>Signatures</span>
+            <i class="bi bi-chevron-down ms-auto"></i>
+          </div>
+          <div class="collapse" id="signaturesSection">
+            <a href="{% url 'signatures:my_requests' %}" class="sidebar-item {% if 'signatures/my-requests' in request.path %}active{% endif %}">
+              <i class="bi bi-file-earmark-check"></i>
+              <span>Mes demandes</span>
+              {% if pending_signatures_count and pending_signatures_count > 0 %}
+                <span class="badge bg-danger ms-2">{{ pending_signatures_count }}</span>
+              {% endif %}
+            </a>
+            <a href="{% url 'signatures:my_devices' %}" class="sidebar-item {% if 'signatures/devices' in request.path %}active{% endif %}">
+              <i class="bi bi-fingerprint"></i>
+              <span>Mes dispositifs</span>
+            </a>
+            <a href="{% url 'signatures:upload_artifact' %}" class="sidebar-item {% if 'signatures/artifacts/upload' in request.path %}active{% endif %}">
+              <i class="bi bi-file-earmark-lock"></i>
+              <span>Uploader un cachet</span>
+            </a>
+            {% if request.user.is_superuser or request.user|has_group:'IT Admin' %}
+            <a href="{% url 'signatures:admin_dashboard' %}" class="sidebar-item {% if 'signatures/admin' in request.path %}active{% endif %}">
+              <i class="bi bi-shield-lock"></i>
+              <span>Admin Dashboard</span>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+
         <!-- Organization Section -->
         <div class="sidebar-section">
           <div class="sidebar-section-header" data-bs-toggle="collapse" data-bs-target="#orgSection">

@@ -14,6 +14,54 @@
                     </h4>
                 </div>
                 <div class="card-body p-4">
+                    <!-- Decision Hierarchy -->
+                    <div class="mb-4">
+                        <h5 class="text-secondary mb-3">Hiérarchie de décision</h5>
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <div class="border rounded p-2 h-100">
+                                    <div class="fw-bold">Employé</div>
+                                    <div class="small text-muted">{{ ordre.employee.full_name }}</div>
+                                    <div class="mt-2">
+                                        <span class="badge bg-{% if ordre.status == 'pending' %}warning{% else %}secondary{% endif %}">En attente</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="border rounded p-2 h-100">
+                                    <div class="fw-bold">M+1</div>
+                                    <div class="small text-muted">{{ supervisors.m1.full_name|default:'—' }}</div>
+                                    <div class="mt-2">
+                                        <span class="badge bg-{% if ordre.status == 'approved' or ordre.status == 'rejected' %}success{% else %}secondary{% endif %}">Décision à prendre</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="border rounded p-2 h-100">
+                                    <div class="fw-bold">M+2</div>
+                                    <div class="small text-muted">{{ supervisors.m2.full_name|default:'—' }}</div>
+                                    <div class="mt-2">
+                                        <span class="badge bg-secondary">(optionnel)</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="border rounded p-2 h-100">
+                                    <div class="fw-bold">RH</div>
+                                    <div class="small text-muted">Validation administrative</div>
+                                    <div class="mt-2">
+                                        {% if ordre.status == 'approved' %}
+                                          <span class="badge bg-success">Approuvé</span>
+                                        {% elif ordre.status == 'rejected' %}
+                                          <span class="badge bg-danger">Rejeté</span>
+                                        {% else %}
+                                          <span class="badge bg-secondary">En attente</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <!-- Employee Info -->
                     <div class="row mb-4">
                         <div class="col-md-6">

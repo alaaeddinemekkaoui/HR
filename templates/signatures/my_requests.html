@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block title %}My Signature Requests{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-pen"></i> My Signature Requests</h2>
+    </div>
+
+    <!-- Pending Signatures -->
+    <div class="card mb-4">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">
+                <i class="bi bi-clock-history"></i> Pending Signatures 
+                <span class="badge bg-dark">{{ pending_signatures.count }}</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if pending_signatures %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Document Type</th>
+                            <th>Document ID</th>
+                            <th>Signature Type</th>
+                            <th>Requested</th>
+                            <th>Expires</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for signature in pending_signatures %}
+                        <tr>
+                            <td>{{ signature.content_type.model|title }}</td>
+                            <td>#{{ signature.object_id }}</td>
+                            <td><span class="badge bg-info">{{ signature.get_signature_type_display }}</span></td>
+                            <td>{{ signature.created_at|date:"Y-m-d H:i" }}</td>
+                            <td>
+                                {% if signature.is_expired %}
+                                    <span class="badge bg-danger">Expired</span>
+                                {% else %}
+                                    <span class="text-danger">{{ signature.expires_at|date:"Y-m-d H:i" }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not signature.is_expired %}
+                                <a href="{% url 'signatures:sign_document' signature.id %}" class="btn btn-sm btn-success">
+                                    <i class="bi bi-pen"></i> Sign Now
+                                </a>
+                                <a href="{% url 'signatures:reject_signature' signature.id %}" class="btn btn-sm btn-danger">
+                                    <i class="bi bi-x"></i> Reject
+                                </a>
+                                {% else %}
+                                <span class="text-muted">Expired</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-4">
+                <i class="bi bi-check-circle" style="font-size: 48px;"></i>
+                <p class="mt-2">No pending signature requests</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Completed Signatures -->
+    <div class="card">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-check-circle"></i> Recent Activity
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if completed_signatures %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Document Type</th>
+                            <th>Document ID</th>
+                            <th>Signature Type</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for signature in completed_signatures %}
+                        <tr>
+                            <td>{{ signature.content_type.model|title }}</td>
+                            <td>#{{ signature.object_id }}</td>
+                            <td><span class="badge bg-info">{{ signature.get_signature_type_display }}</span></td>
+                            <td>
+                                {% if signature.status == 'signed' %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check"></i> Signed
+                                    </span>
+                                {% elif signature.status == 'rejected' %}
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-x"></i> Rejected
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>{{ signature.signed_at|date:"Y-m-d H:i" }}</td>
+                            <td>
+                                <a href="{% url 'signatures:signature_detail' signature.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-4">
+                <i class="bi bi-inbox" style="font-size: 48px;"></i>
+                <p class="mt-2">No completed signatures yet</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

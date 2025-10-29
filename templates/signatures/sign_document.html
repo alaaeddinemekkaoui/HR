@@ -1,0 +1,729 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sign Document{% endblock %}
+
+{% block extra_css %}
+<style>
+    .signature-canvas {
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        background-color: #fff;
+        cursor: crosshair;
+        touch-action: none;
+    }
+    
+    .signature-preview {
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        min-height: 150px;
+        background-color: #f8f9fa;
+    }
+    
+    .document-info {
+        background-color: #f8f9fa;
+        border-left: 4px solid #0d6efd;
+        padding: 15px;
+        border-radius: 4px;
+    }
+    
+    .signature-warning {
+        background-color: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding: 15px;
+        border-radius: 4px;
+    }
+    
+    .btn-sign {
+        background-color: #28a745;
+        border-color: #28a745;
+        padding: 12px 30px;
+        font-size: 18px;
+    }
+    
+    .btn-sign:hover {
+        background-color: #218838;
+        border-color: #1e7e34;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-pen"></i> Electronic Signature Request</h2>
+                <a href="{% url 'signatures:my_requests' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to My Requests
+                </a>
+            </div>
+
+            <!-- Document Information -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Document Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Document Type:</strong> {{ document_type|title }}</p>
+                            <p><strong>Document ID:</strong> #{{ document.id }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Signature Type:</strong> <span class="badge bg-info">{{ signature.get_signature_type_display }}</span></p>
+                            <p><strong>Expires:</strong> <span class="text-danger">{{ signature.expires_at|date:"Y-m-d H:i" }}</span></p>
+                        </div>
+                    </div>
+                    
+                    <!-- Document Preview -->
+                    {% if document %}
+                    <hr>
+                    <div class="document-preview">
+                        <h6>Document Details:</h6>
+                        {% if document_type == 'deploymentforfaitaire' or document_type == 'deploymentreal' or document_type == 'ordremission' %}
+                            <p><strong>Employee:</strong> {{ document.employee.full_name }}</p>
+                            <p><strong>Start Date:</strong> {{ document.start_date|date:"Y-m-d" }}</p>
+                            <p><strong>End Date:</strong> {{ document.end_date|date:"Y-m-d" }}</p>
+                            {% if document.destination %}
+                            <p><strong>Destination:</strong> {{ document.destination }}</p>
+                            {% endif %}
+                        {% elif document_type == 'leaverequest' %}
+                            <p><strong>Employee:</strong> {{ document.employee.full_name }}</p>
+                            <p><strong>Leave Type:</strong> {{ document.leave_type.name }}</p>
+                            <p><strong>Start Date:</strong> {{ document.start_date|date:"Y-m-d" }}</p>
+                            <p><strong>End Date:</strong> {{ document.end_date|date:"Y-m-d" }}</p>
+                            <p><strong>Duration:</strong> {{ document.duration }} days</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Signature Warning -->
+            <div class="signature-warning mb-4">
+                <h6><i class="bi bi-exclamation-triangle"></i> Important Notice</h6>
+                <p class="mb-0">By signing this document electronically, you acknowledge that:</p>
+                <ul>
+                    <li>Your electronic signature has the same legal validity as a handwritten signature</li>
+                    <li>You are the authorized person to sign this document</li>
+                    <li>Your IP address and device information will be recorded</li>
+                    <li>This action cannot be undone once submitted</li>
+                </ul>
+            </div>
+
+            <!-- Signature Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-pen-fill"></i> Provide Your Signature</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="signatureForm">
+                        {% csrf_token %}
+                        
+                        <!-- Signature Method Selection -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Choose Signature Method:</label>
+                            <div class="d-flex gap-4 flex-wrap">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="signature_method" id="drawMethod" value="draw" checked>
+                                    <label class="form-check-label" for="drawMethod">
+                                        <i class="bi bi-pencil"></i> Draw Signature
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="signature_method" id="typeMethod" value="type">
+                                    <label class="form-check-label" for="typeMethod">
+                                        <i class="bi bi-keyboard"></i> Type Full Name
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="signature_method" id="usbMethod" value="usb">
+                                    <label class="form-check-label" for="usbMethod">
+                                        <i class="bi bi-usb-drive"></i> USB Signature Pad
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="signature_method" id="biometricMethod" value="biometric">
+                                    <label class="form-check-label" for="biometricMethod">
+                                        <i class="bi bi-fingerprint"></i> Fingerprint
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="signature_method" id="usbStampMethod" value="usb_stamp">
+                                    <label class="form-check-label" for="usbStampMethod">
+                                        <i class="bi bi-shield-lock"></i> USB Digital Stamp
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Draw Signature -->
+                        <div id="drawSignatureSection" class="mb-4">
+                            <label class="form-label fw-bold">Draw Your Signature:</label>
+                            <div class="text-center">
+                                <canvas id="signatureCanvas" class="signature-canvas" width="600" height="200"></canvas>
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-danger" id="clearCanvas">
+                                        <i class="bi bi-x-circle"></i> Clear
+                                    </button>
+                                </div>
+                            </div>
+                            {{ form.signature_image }}
+                        </div>
+
+                        <!-- Type Signature -->
+                        <div id="typeSignatureSection" class="mb-4" style="display: none;">
+                            <label class="form-label fw-bold">Type Your Full Name:</label>
+                            {{ form.signature_text }}
+                            <div id="signaturePreview" class="signature-preview mt-3">
+                                <div class="text-center text-muted">
+                                    <p class="mb-0">Signature preview will appear here</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- USB Signature Pad -->
+                        <div id="usbSignatureSection" class="mb-4" style="display: none;">
+                            <label class="form-label fw-bold">USB Signature Pad:</label>
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> Please connect your USB signature pad to continue.
+                            </div>
+                            <div id="usbStatus" class="mb-3">
+                                <button type="button" class="btn btn-primary" id="detectUsbBtn">
+                                    <i class="bi bi-usb-drive"></i> Detect USB Device
+                                </button>
+                                <div id="usbDetectionResult" class="mt-2"></div>
+                            </div>
+                            <div id="usbSignaturePad" style="display: none;">
+                                <div class="border rounded p-3 text-center">
+                                    <i class="bi bi-usb-drive" style="font-size: 48px;"></i>
+                                    <p class="mt-2">Sign on your USB signature pad...</p>
+                                    <div id="usbSignatureStatus"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Biometric Fingerprint -->
+                        <div id="biometricSignatureSection" class="mb-4" style="display: none;">
+                            <label class="form-label fw-bold">Fingerprint Authentication:</label>
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> Please place your finger on the fingerprint reader.
+                            </div>
+                            <div id="biometricStatus" class="mb-3">
+                                <button type="button" class="btn btn-primary" id="scanFingerprintBtn">
+                                    <i class="bi bi-fingerprint"></i> Scan Fingerprint
+                                </button>
+                                <div id="biometricResult" class="mt-2"></div>
+                            </div>
+                            <div id="biometricDisplay" class="text-center" style="display: none;">
+                                <i class="bi bi-fingerprint" style="font-size: 64px; color: #28a745;"></i>
+                                <p class="text-success mt-2">Fingerprint verified ✓</p>
+                            </div>
+                        </div>
+
+                        <!-- USB Digital Stamp -->
+                        <div id="usbStampSection" class="mb-4" style="display: none;">
+                            <label class="form-label fw-bold"><i class="bi bi-shield-lock"></i> USB Digital Stamp:</label>
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> Enter password to unlock your registered USB digital stamp.
+                            </div>
+                            
+                            <!-- Select USB Stamp Device -->
+                            <div class="mb-3">
+                                <label class="form-label">Select USB Stamp Device:</label>
+                                <select class="form-select" id="usbStampDeviceSelect">
+                                    <option value="">-- Select Device --</option>
+                                    <!-- Will be populated dynamically -->
+                                </select>
+                            </div>
+
+                            <!-- Password Input -->
+                            <div class="mb-3" id="stampPasswordSection" style="display: none;">
+                                <label for="stampPassword" class="form-label">Enter Stamp Password:</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="stampPassword" placeholder="Enter password">
+                                    <button class="btn btn-outline-primary" type="button" id="unlockStampBtn">
+                                        <i class="bi bi-unlock"></i> Unlock
+                                    </button>
+                                </div>
+                                <div id="stampPasswordResult" class="mt-2"></div>
+                            </div>
+
+                            <!-- Stamp Preview -->
+                            <div id="stampPreviewSection" class="mt-3" style="display: none;">
+                                <label class="form-label">Digital Stamp Preview:</label>
+                                <div class="border rounded p-4 text-center bg-light">
+                                    <img id="stampPreviewImage" src="" alt="Digital Stamp" style="max-width: 250px; max-height: 250px;">
+                                    <div class="mt-3">
+                                        <span class="badge bg-success"><i class="bi bi-check-circle"></i> Stamp Unlocked</span>
+                                    </div>
+                                    <p class="text-muted mt-2 mb-0"><small>Official Company Seal</small></p>
+                                </div>
+                            </div>
+
+                            <!-- Or use approved uploaded stamp artifact -->
+                            <div class="mt-3">
+                                <label class="form-label">Or choose an approved uploaded stamp:</label>
+                                <select class="form-select" id="approvedArtifactSelect">
+                                    <option value="">-- None --</option>
+                                    {% for a in approved_artifacts %}
+                                        <option value="{{ a.id }}">{{ a.original_filename }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">If selected, this artifact will be used instead of the USB stamp image.</div>
+                            </div>
+
+                            <input type="hidden" id="usbStampImage" name="usb_stamp_image">
+                            <input type="hidden" id="usbStampSerial" name="usb_stamp_serial">
+                            <input type="hidden" id="stampArtifactId" name="stamp_artifact_id">
+                        </div>
+
+                        <!-- Comments -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Comments (Optional):</label>
+                            {{ form.comments }}
+                        </div>
+
+                        <!-- Terms Acceptance -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                {{ form.accept_terms }}
+                                <label class="form-check-label" for="{{ form.accept_terms.id_for_label }}">
+                                    {{ form.accept_terms.label }}
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Errors -->
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                    <p class="mb-0">{{ error }}</p>
+                                {% endfor %}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'signatures:reject_signature' signature.id %}" class="btn btn-danger">
+                                <i class="bi bi-x-circle"></i> Reject
+                            </a>
+                            <button type="submit" class="btn btn-sign text-white">
+                                <i class="bi bi-check-circle"></i> Sign Document
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Canvas setup
+    const canvas = document.getElementById('signatureCanvas');
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    // Drawing functions
+    function startDrawing(e) {
+        isDrawing = true;
+        [lastX, lastY] = [e.offsetX || e.touches[0].clientX - canvas.offsetLeft, 
+                          e.offsetY || e.touches[0].clientY - canvas.offsetTop];
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+        
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        
+        const currentX = e.offsetX || e.touches[0].clientX - canvas.offsetLeft;
+        const currentY = e.offsetY || e.touches[0].clientY - canvas.offsetTop;
+        
+        ctx.lineTo(currentX, currentY);
+        ctx.stroke();
+        
+        [lastX, lastY] = [currentX, currentY];
+    }
+
+    function stopDrawing() {
+        isDrawing = false;
+    }
+
+    // Mouse events
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+
+    // Touch events for mobile
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        startDrawing(e);
+    });
+    canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        draw(e);
+    });
+    canvas.addEventListener('touchend', stopDrawing);
+
+    // Clear canvas
+    document.getElementById('clearCanvas').addEventListener('click', function() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+
+    // Signature method toggle
+    const drawMethod = document.getElementById('drawMethod');
+    const typeMethod = document.getElementById('typeMethod');
+    const usbMethod = document.getElementById('usbMethod');
+    const biometricMethod = document.getElementById('biometricMethod');
+    const usbStampMethod = document.getElementById('usbStampMethod');
+    const drawSection = document.getElementById('drawSignatureSection');
+    const typeSection = document.getElementById('typeSignatureSection');
+    const usbSection = document.getElementById('usbSignatureSection');
+    const biometricSection = document.getElementById('biometricSignatureSection');
+    const usbStampSection = document.getElementById('usbStampSection');
+
+    drawMethod.addEventListener('change', function() {
+        if (this.checked) {
+            drawSection.style.display = 'block';
+            typeSection.style.display = 'none';
+            usbSection.style.display = 'none';
+            biometricSection.style.display = 'none';
+            usbStampSection.style.display = 'none';
+        }
+    });
+
+    typeMethod.addEventListener('change', function() {
+        if (this.checked) {
+            drawSection.style.display = 'none';
+            typeSection.style.display = 'block';
+            usbSection.style.display = 'none';
+            biometricSection.style.display = 'none';
+            usbStampSection.style.display = 'none';
+        }
+    });
+
+    usbMethod.addEventListener('change', function() {
+        if (this.checked) {
+            drawSection.style.display = 'none';
+            typeSection.style.display = 'none';
+            usbSection.style.display = 'block';
+            biometricSection.style.display = 'none';
+            usbStampSection.style.display = 'none';
+        }
+    });
+
+    biometricMethod.addEventListener('change', function() {
+        if (this.checked) {
+            drawSection.style.display = 'none';
+            typeSection.style.display = 'none';
+            usbSection.style.display = 'none';
+            biometricSection.style.display = 'block';
+            usbStampSection.style.display = 'none';
+        }
+    });
+
+    usbStampMethod.addEventListener('change', function() {
+        if (this.checked) {
+            drawSection.style.display = 'none';
+            typeSection.style.display = 'none';
+            usbSection.style.display = 'none';
+            biometricSection.style.display = 'none';
+            usbStampSection.style.display = 'block';
+            loadUSBStampDevices();
+        }
+    });
+
+    // Type signature preview
+    const signatureTextInput = document.querySelector('input[name="signature_text"]');
+    const signaturePreview = document.getElementById('signaturePreview');
+
+    if (signatureTextInput) {
+        signatureTextInput.addEventListener('input', function() {
+            if (this.value) {
+                signaturePreview.innerHTML = `
+                    <div class="text-center">
+                        <p style="font-family: 'Brush Script MT', cursive; font-size: 36px; margin: 0;">
+                            ${this.value}
+                        </p>
+                    </div>
+                `;
+            } else {
+                signaturePreview.innerHTML = `
+                    <div class="text-center text-muted">
+                        <p class="mb-0">Signature preview will appear here</p>
+                    </div>
+                `;
+            }
+        });
+    }
+
+    // Form submission
+    document.getElementById('signatureForm').addEventListener('submit', function(e) {
+        const method = document.querySelector('input[name="signature_method"]:checked').value;
+        
+        if (method === 'draw') {
+            // Save canvas as base64
+            const signatureData = canvas.toDataURL('image/png');
+            document.querySelector('input[name="signature_image"]').value = signatureData;
+        }
+    });
+
+    // USB Device Detection
+    const detectUsbBtn = document.getElementById('detectUsbBtn');
+    const usbDetectionResult = document.getElementById('usbDetectionResult');
+    const usbSignaturePad = document.getElementById('usbSignaturePad');
+    
+    if (detectUsbBtn) {
+        detectUsbBtn.addEventListener('click', async function() {
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Detecting...';
+            
+            try {
+                // Check for Web USB API support
+                if (!navigator.usb) {
+                    usbDetectionResult.innerHTML = '<div class="alert alert-warning">USB API not supported in this browser. Please use Chrome or Edge.</div>';
+                    this.disabled = false;
+                    this.innerHTML = '<i class="bi bi-usb-drive"></i> Detect USB Device';
+                    return;
+                }
+                
+                // Request USB device
+                const device = await navigator.usb.requestDevice({ filters: [] });
+                
+                if (device) {
+                    // Get device serial number
+                    const deviceSerial = device.serialNumber || 'UNKNOWN';
+                    const deviceName = device.productName || 'USB Signature Pad';
+                    
+                    // Call backend to verify device registration
+                    const response = await fetch('{% url "signatures:detect_usb_api" %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({
+                            device_serial: deviceSerial,
+                            device_name: deviceName
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.detected) {
+                        usbDetectionResult.innerHTML = `
+                            <div class="alert alert-success">
+                                <i class="bi bi-check-circle"></i> Device detected: ${data.device_name}
+                            </div>
+                        `;
+                        usbSignaturePad.style.display = 'block';
+                    } else {
+                        usbDetectionResult.innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="bi bi-exclamation-circle"></i> ${data.message || 'Device not registered'}
+                                <br><a href="{% url 'signatures:register_device' %}" class="btn btn-sm btn-primary mt-2">Register Device</a>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('USB detection error:', error);
+                usbDetectionResult.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-circle"></i> Error: ${error.message}
+                    </div>
+                `;
+            }
+            
+            this.disabled = false;
+            this.innerHTML = '<i class="bi bi-usb-drive"></i> Detect USB Device';
+        });
+    }
+
+    // Fingerprint Scanning
+    const scanFingerprintBtn = document.getElementById('scanFingerprintBtn');
+    const biometricResult = document.getElementById('biometricResult');
+    const biometricDisplay = document.getElementById('biometricDisplay');
+    
+    if (scanFingerprintBtn) {
+        scanFingerprintBtn.addEventListener('click', async function() {
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Scanning...';
+            
+            try {
+                // Check for Web Authentication API (WebAuthn) support
+                if (!navigator.credentials || !window.PublicKeyCredential) {
+                    biometricResult.innerHTML = '<div class="alert alert-warning">Biometric authentication not supported in this browser.</div>';
+                    this.disabled = false;
+                    this.innerHTML = '<i class="bi bi-fingerprint"></i> Scan Fingerprint';
+                    return;
+                }
+                
+                // Request biometric authentication
+                // Note: This is a simplified example. In production, use proper WebAuthn flow
+                const credential = await navigator.credentials.get({
+                    publicKey: {
+                        challenge: new Uint8Array(32), // Should be generated by server
+                        rpId: window.location.hostname,
+                        userVerification: 'required'
+                    }
+                });
+                
+                if (credential) {
+                    biometricResult.innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle"></i> Fingerprint verified successfully!
+                        </div>
+                    `;
+                    biometricDisplay.style.display = 'block';
+                } else {
+                    biometricResult.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-circle"></i> Fingerprint verification failed
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Fingerprint scan error:', error);
+                biometricResult.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> No fingerprint reader detected or not registered.
+                        <br><a href="{% url 'signatures:register_device' %}" class="btn btn-sm btn-primary mt-2">Register Fingerprint</a>
+                    </div>
+                `;
+            }
+            
+            this.disabled = false;
+            this.innerHTML = '<i class="bi bi-fingerprint"></i> Scan Fingerprint';
+        });
+    }
+
+    // USB Stamp Functions
+    function loadUSBStampDevices() {
+        // In a real implementation, this would fetch from server
+        const select = document.getElementById('usbStampDeviceSelect');
+        select.innerHTML = '<option value="">-- Loading devices... --</option>';
+        
+        // Mock data - replace with actual API call
+        setTimeout(() => {
+            select.innerHTML = `
+                <option value="">-- Select Device --</option>
+                <option value="STAMP-123456">IAV Hassan II Official Stamp (USB)</option>
+            `;
+        }, 500);
+    }
+
+    const usbStampDeviceSelect = document.getElementById('usbStampDeviceSelect');
+    const stampPasswordSection = document.getElementById('stampPasswordSection');
+    const unlockStampBtn = document.getElementById('unlockStampBtn');
+    const stampPassword = document.getElementById('stampPassword');
+    const stampPasswordResult = document.getElementById('stampPasswordResult');
+    const stampPreviewSection = document.getElementById('stampPreviewSection');
+    const stampPreviewImage = document.getElementById('stampPreviewImage');
+
+    if (usbStampDeviceSelect) {
+        usbStampDeviceSelect.addEventListener('change', function() {
+            if (this.value) {
+                stampPasswordSection.style.display = 'block';
+                stampPreviewSection.style.display = 'none';
+            } else {
+                stampPasswordSection.style.display = 'none';
+                stampPreviewSection.style.display = 'none';
+            }
+        });
+    }
+
+    if (unlockStampBtn) {
+        unlockStampBtn.addEventListener('click', async function() {
+            const deviceSerial = usbStampDeviceSelect.value;
+            const password = stampPassword.value;
+
+            if (!password) {
+                stampPasswordResult.innerHTML = '<div class="alert alert-warning">Please enter password</div>';
+                return;
+            }
+
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Verifying...';
+
+            try {
+                const response = await fetch('{% url "signatures:verify_stamp_password_api" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        device_serial: deviceSerial,
+                        password: password
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Show stamp preview
+                    stampPreviewImage.src = data.stamp_image;
+                    stampPreviewSection.style.display = 'block';
+                    stampPasswordSection.style.display = 'none';
+                    
+                    // Store stamp data for submission
+                    document.getElementById('usbStampImage').value = data.stamp_image;
+                    document.getElementById('usbStampSerial').value = deviceSerial;
+
+                    stampPasswordResult.innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle"></i> Stamp unlocked successfully!
+                        </div>
+                    `;
+                } else {
+                    stampPasswordResult.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-circle"></i> ${data.error}
+                            ${data.attempts_remaining ? `<br><small>${data.attempts_remaining} attempts remaining</small>` : ''}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Stamp unlock error:', error);
+                stampPasswordResult.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-circle"></i> Error: ${error.message}
+                    </div>
+                `;
+            }
+
+            this.disabled = false;
+            this.innerHTML = '<i class="bi bi-unlock"></i> Unlock';
+        });
+    }
+
+    // Keep artifact selection in hidden field
+    const approvedArtifactSelect = document.getElementById('approvedArtifactSelect');
+    if (approvedArtifactSelect) {
+        approvedArtifactSelect.addEventListener('change', function() {
+            document.getElementById('stampArtifactId').value = this.value;
+        });
+    }
+});
+</script>
+{% endblock %}
+

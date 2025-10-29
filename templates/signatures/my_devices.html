@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}My Biometric Devices{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-usb-drive"></i> My Biometric Devices</h2>
+        <a href="{% url 'signatures:register_device' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Register New Device
+        </a>
+    </div>
+
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i>
+        <strong>Note:</strong> Registered devices require admin verification before use.
+    </div>
+
+    {% if devices %}
+    <div class="row">
+        {% for device in devices %}
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header 
+                    {% if device.is_verified and device.is_active %}bg-success text-white
+                    {% elif not device.is_verified %}bg-warning text-dark
+                    {% else %}bg-secondary text-white{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            {% if device.device_type == 'usb_signature_pad' %}
+                                <i class="bi bi-usb-drive"></i>
+                            {% elif device.device_type == 'fingerprint_reader' %}
+                                <i class="bi bi-fingerprint"></i>
+                            {% elif device.device_type == 'face_camera' %}
+                                <i class="bi bi-camera-video"></i>
+                            {% else %}
+                                <i class="bi bi-shield-check"></i>
+                            {% endif %}
+                            {{ device.get_device_type_display }}
+                        </h6>
+                        <span class="badge 
+                            {% if device.is_verified and device.is_active %}bg-light text-dark
+                            {% elif not device.is_verified %}bg-dark
+                            {% else %}bg-dark{% endif %}">
+                            {% if device.is_verified and device.is_active %}
+                                Active
+                            {% elif not device.is_verified %}
+                                Pending Verification
+                            {% else %}
+                                Inactive
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p><strong>Device Name:</strong> {{ device.device_name }}</p>
+                    <p><strong>Serial Number:</strong> <code>{{ device.device_serial }}</code></p>
+                    <p><strong>Registered:</strong> {{ device.registered_at|date:"Y-m-d H:i" }}</p>
+                    {% if device.last_used_at %}
+                    <p><strong>Last Used:</strong> {{ device.last_used_at|date:"Y-m-d H:i" }}</p>
+                    {% endif %}
+                    
+                    {% if device.is_locked %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-lock"></i> Device locked until {{ device.locked_until|date:"Y-m-d H:i" }}
+                        <br><small>Too many failed attempts</small>
+                    </div>
+                    {% endif %}
+                    
+                    {% if device.is_active %}
+                    <a href="{% url 'signatures:deactivate_device' device.id %}" 
+                       class="btn btn-sm btn-danger" 
+                       onclick="return confirm('Are you sure you want to deactivate this device?');">
+                        <i class="bi bi-x-circle"></i> Deactivate
+                    </a>
+                    {% endif %}
+                    
+                    {% if not device.is_verified %}
+                    <div class="alert alert-warning mt-3 mb-0">
+                        <i class="bi bi-hourglass"></i> Awaiting admin verification
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-usb-drive" style="font-size: 64px; color: #ccc;"></i>
+            <p class="text-muted mt-3">No biometric devices registered</p>
+            <a href="{% url 'signatures:register_device' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Register Your First Device
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,374 @@
+{% extends 'base.html' %}
+
+{% block title %}Register Biometric Device{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-usb-drive"></i> Register Biometric Device</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Supported Devices:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>USB Signature Pads (Wacom, Topaz, etc.)</li>
+                            <li>Fingerprint Readers (Windows Hello compatible)</li>
+                            <li>Face Recognition Cameras</li>
+                        </ul>
+                    </div>
+
+                    <form method="post" id="deviceRegistrationForm">
+                        {% csrf_token %}
+                        
+                        <!-- Device Type -->
+                        <div class="mb-3">
+                            <label for="device_type" class="form-label fw-bold">Device Type:</label>
+                            <select name="device_type" id="device_type" class="form-select" required>
+                                <option value="">-- Select Device Type --</option>
+                                <option value="usb_signature_pad">USB Signature Pad</option>
+                                <option value="usb_stamp_device">USB Digital Stamp (Password Protected)</option>
+                                <option value="fingerprint_reader">Fingerprint Reader</option>
+                                <option value="face_camera">Face Recognition Camera</option>
+                                <option value="iris_scanner">Iris Scanner</option>
+                            </select>
+                            <small class="text-muted">USB Digital Stamp: USB device containing official company seal/stamp image</small>
+                        </div>
+
+                        <!-- Auto-Detection -->
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-outline-primary" id="detectDeviceBtn">
+                                <i class="bi bi-search"></i> Auto-Detect Device
+                            </button>
+                            <div id="detectionResult" class="mt-2"></div>
+                        </div>
+
+                        <!-- Device Name -->
+                        <div class="mb-3">
+                            <label for="device_name" class="form-label fw-bold">Device Name/Model:</label>
+                            <input type="text" name="device_name" id="device_name" class="form-control" 
+                                   placeholder="e.g., Wacom STU-540" required>
+                        </div>
+
+                        <!-- Device Serial -->
+                        <div class="mb-3">
+                            <label for="device_serial" class="form-label fw-bold">Device Serial Number:</label>
+                            <input type="text" name="device_serial" id="device_serial" class="form-control" 
+                                   placeholder="Unique device identifier" required readonly>
+                            <small class="text-muted">Auto-filled during detection</small>
+                        </div>
+
+                        <!-- Device Fingerprint -->
+                        <input type="hidden" name="device_fingerprint" id="device_fingerprint">
+
+                        <!-- Enrollment Section -->
+                        <div id="enrollmentSection" style="display: none;">
+                            <hr>
+                            <h6 class="fw-bold">Biometric Enrollment:</h6>
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                Please provide a biometric sample to enroll your device.
+                            </div>
+                            
+                            <div id="fingerprintEnrollment" style="display: none;">
+                                <button type="button" class="btn btn-primary" id="enrollFingerprintBtn">
+                                    <i class="bi bi-fingerprint"></i> Scan Fingerprint
+                                </button>
+                                <div id="fingerprintResult" class="mt-2"></div>
+                                <input type="hidden" name="enrollment_data" id="enrollment_data">
+                            </div>
+                        </div>
+
+                        <!-- USB Stamp Section -->
+                        <div id="stampSection" style="display: none;">
+                            <hr>
+                            <h6 class="fw-bold"><i class="bi bi-shield-lock"></i> USB Digital Stamp Setup:</h6>
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i>
+                                Your USB device should contain a digital stamp/seal image. Set a secure password to protect it.
+                            </div>
+                            
+                            <!-- Stamp Image Upload -->
+                            <div class="mb-3">
+                                <label for="stamp_image_file" class="form-label fw-bold">Select Stamp Image from USB:</label>
+                                <input type="file" class="form-control" id="stamp_image_file" accept="image/*">
+                                <small class="text-muted">Supported: PNG, JPG, SVG (official company stamp/seal)</small>
+                            </div>
+
+                            <!-- Stamp Preview -->
+                            <div class="mb-3" id="stampPreviewContainer" style="display: none;">
+                                <label class="form-label fw-bold">Stamp Preview:</label>
+                                <div class="border rounded p-3 text-center bg-light">
+                                    <img id="stampPreview" src="" alt="Stamp Preview" style="max-width: 200px; max-height: 200px;">
+                                </div>
+                            </div>
+
+                            <!-- Password Setup -->
+                            <div class="mb-3">
+                                <label for="stamp_password" class="form-label fw-bold">Set Stamp Password:</label>
+                                <input type="password" class="form-control" id="stamp_password" 
+                                       placeholder="Enter secure password" minlength="6">
+                                <small class="text-muted">Minimum 6 characters. This password will be required to use the stamp.</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="stamp_password_confirm" class="form-label fw-bold">Confirm Password:</label>
+                                <input type="password" class="form-control" id="stamp_password_confirm" 
+                                       placeholder="Re-enter password" minlength="6">
+                            </div>
+
+                            <input type="hidden" name="stamp_password" id="stamp_password_hidden">
+                            <input type="hidden" name="stamp_image" id="stamp_image_data">
+                            <input type="hidden" name="stamp_image_preview" id="stamp_image_preview_data">
+                        </div>
+
+                        <hr>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'signatures:my_devices' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success" id="submitBtn">
+                                <i class="bi bi-check-circle"></i> Register Device
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deviceTypeSelect = document.getElementById('device_type');
+    const detectDeviceBtn = document.getElementById('detectDeviceBtn');
+    const detectionResult = document.getElementById('detectionResult');
+    const enrollmentSection = document.getElementById('enrollmentSection');
+    const fingerprintEnrollment = document.getElementById('fingerprintEnrollment');
+    const enrollFingerprintBtn = document.getElementById('enrollFingerprintBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const stampSection = document.getElementById('stampSection');
+    const stampImageFile = document.getElementById('stamp_image_file');
+    const stampPreview = document.getElementById('stampPreview');
+    const stampPreviewContainer = document.getElementById('stampPreviewContainer');
+    const deviceRegistrationForm = document.getElementById('deviceRegistrationForm');
+    
+    // Show enrollment for biometric devices or stamp section for USB stamp
+    deviceTypeSelect.addEventListener('change', function() {
+        enrollmentSection.style.display = 'none';
+        fingerprintEnrollment.style.display = 'none';
+        stampSection.style.display = 'none';
+        
+        // Reset required fields
+        const stampImageFile = document.getElementById('stamp_image_file');
+        const stampPassword = document.getElementById('stamp_password');
+        const stampPasswordConfirm = document.getElementById('stamp_password_confirm');
+        
+        if (stampImageFile) stampImageFile.required = false;
+        if (stampPassword) stampPassword.required = false;
+        if (stampPasswordConfirm) stampPasswordConfirm.required = false;
+        
+        if (this.value === 'fingerprint_reader') {
+            enrollmentSection.style.display = 'block';
+            fingerprintEnrollment.style.display = 'block';
+        } else if (this.value === 'usb_stamp_device') {
+            stampSection.style.display = 'block';
+            if (stampImageFile) stampImageFile.required = true;
+            if (stampPassword) stampPassword.required = true;
+            if (stampPasswordConfirm) stampPasswordConfirm.required = true;
+            
+            document.getElementById('device_name').value = 'USB Digital Stamp';
+            document.getElementById('device_serial').value = 'STAMP-' + Date.now();
+            document.getElementById('device_fingerprint').value = 'stamp-device-' + Date.now();
+        } else if (this.value === 'usb_signature_pad') {
+            document.getElementById('device_name').value = 'USB Signature Pad';
+            document.getElementById('device_serial').value = 'USB-' + Date.now();
+            document.getElementById('device_fingerprint').value = 'usb-device-' + Date.now();
+        }
+    });
+    
+    // Auto-detect device
+    detectDeviceBtn.addEventListener('click', async function() {
+        const deviceType = deviceTypeSelect.value;
+        if (!deviceType) {
+            alert('Please select a device type first');
+            return;
+        }
+        
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Detecting...';
+        
+        try {
+            if (deviceType === 'usb_signature_pad') {
+                // Detect USB device
+                if (!navigator.usb) {
+                    detectionResult.innerHTML = '<div class="alert alert-warning">USB API not supported. Use Chrome or Edge.</div>';
+                    return;
+                }
+                
+                const device = await navigator.usb.requestDevice({ filters: [] });
+                if (device) {
+                    document.getElementById('device_name').value = device.productName || 'USB Signature Pad';
+                    document.getElementById('device_serial').value = device.serialNumber || 'USB-' + Date.now();
+                    document.getElementById('device_fingerprint').value = generateDeviceFingerprint(device);
+                    
+                    detectionResult.innerHTML = '<div class="alert alert-success"><i class="bi bi-check"></i> Device detected!</div>';
+                    submitBtn.disabled = false;
+                }
+            } else if (deviceType === 'fingerprint_reader') {
+                // Detect fingerprint reader
+                detectionResult.innerHTML = '<div class="alert alert-info">Fingerprint reader detected. Please enroll your fingerprint below.</div>';
+                document.getElementById('device_name').value = 'Windows Hello Fingerprint';
+                document.getElementById('device_serial').value = 'FP-' + Date.now();
+                document.getElementById('device_fingerprint').value = 'fingerprint-device-' + Date.now();
+            }
+        } catch (error) {
+            detectionResult.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+        }
+        
+        this.disabled = false;
+        this.innerHTML = '<i class="bi bi-search"></i> Auto-Detect Device';
+    });
+    
+    // Enroll fingerprint
+    if (enrollFingerprintBtn) {
+        enrollFingerprintBtn.addEventListener('click', async function() {
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Scanning...';
+            
+            try {
+                if (navigator.credentials && window.PublicKeyCredential) {
+                    // Use WebAuthn for fingerprint enrollment
+                    const credential = await navigator.credentials.create({
+                        publicKey: {
+                            challenge: new Uint8Array(32),
+                            rp: { name: "HR System" },
+                            user: {
+                                id: new Uint8Array(16),
+                                name: "{{ request.user.username }}",
+                                displayName: "{{ request.user.get_full_name }}"
+                            },
+                            pubKeyCredParams: [{alg: -7, type: "public-key"}],
+                            authenticatorSelection: {
+                                authenticatorAttachment: "platform",
+                                userVerification: "required"
+                            }
+                        }
+                    });
+                    
+                    if (credential) {
+                        // Store credential ID as enrollment data
+                        document.getElementById('enrollment_data').value = btoa(credential.id);
+                        document.getElementById('fingerprintResult').innerHTML = '<div class="alert alert-success"><i class="bi bi-check"></i> Fingerprint enrolled successfully!</div>';
+                        submitBtn.disabled = false;
+                    }
+                } else {
+                    throw new Error('WebAuthn not supported');
+                }
+            } catch (error) {
+                document.getElementById('fingerprintResult').innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+            }
+            
+            this.disabled = false;
+            this.innerHTML = '<i class="bi bi-fingerprint"></i> Scan Fingerprint';
+        });
+    }
+    
+    function generateDeviceFingerprint(device) {
+        // Generate unique fingerprint from device properties
+        const data = `${device.vendorId}-${device.productId}-${device.serialNumber}`;
+        return btoa(data);
+    }
+    
+    // Handle stamp image upload
+    if (stampImageFile) {
+        stampImageFile.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const base64Image = event.target.result;
+                    
+                    // Show preview
+                    stampPreview.src = base64Image;
+                    stampPreviewContainer.style.display = 'block';
+                    
+                    // Store full image
+                    document.getElementById('stamp_image_data').value = base64Image;
+                    
+                    // Create watermarked preview (add watermark)
+                    createWatermarkedPreview(base64Image);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+    
+    function createWatermarkedPreview(base64Image) {
+        // Create canvas to add watermark
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            
+            // Draw original image
+            ctx.drawImage(img, 0, 0);
+            
+            // Add semi-transparent watermark
+            ctx.globalAlpha = 0.3;
+            ctx.font = 'bold 30px Arial';
+            ctx.fillStyle = 'red';
+            ctx.textAlign = 'center';
+            ctx.fillText('PREVIEW ONLY', canvas.width/2, canvas.height/2);
+            
+            // Store watermarked preview
+            document.getElementById('stamp_image_preview_data').value = canvas.toDataURL();
+        };
+        img.src = base64Image;
+    }
+    
+    // Validate stamp form before submission
+    deviceRegistrationForm.addEventListener('submit', function(e) {
+        const deviceType = deviceTypeSelect.value;
+        
+        if (deviceType === 'usb_stamp_device') {
+            const password = document.getElementById('stamp_password').value;
+            const passwordConfirm = document.getElementById('stamp_password_confirm').value;
+            const stampImage = document.getElementById('stamp_image_data').value;
+            
+            if (!stampImage) {
+                e.preventDefault();
+                alert('Please select a stamp image');
+                return false;
+            }
+            
+            if (password !== passwordConfirm) {
+                e.preventDefault();
+                alert('Passwords do not match!');
+                return false;
+            }
+            
+            if (password.length < 6) {
+                e.preventDefault();
+                alert('Password must be at least 6 characters');
+                return false;
+            }
+            
+            // Set password to hidden field
+            document.getElementById('stamp_password_hidden').value = password;
+            
+            // Enable submit if validation passes
+            submitBtn.disabled = false;
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'apps.leaves',
     'apps.notifications',
     'apps.documents',
+    'apps.signatures',  # Electronic signature system
 ]
 
 MIDDLEWARE = [

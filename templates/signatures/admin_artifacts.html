@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Stamp Artifacts{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h3 class="mb-3">Pending Stamp Artifacts</h3>
+  {% if pending %}
+    <div class="table-responsive">
+      <table class="table table-striped align-middle">
+        <thead>
+          <tr>
+            <th>Owner</th>
+            <th>Filename</th>
+            <th>MIME</th>
+            <th>Size</th>
+            <th>Uploaded</th>
+            <th>Integrity (SHA256)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in pending %}
+          <tr>
+            <td>{{ a.owner.get_full_name|default:a.owner.username }}</td>
+            <td>{{ a.original_filename }}</td>
+            <td>{{ a.mime_type|default:'-' }}</td>
+            <td>{{ a.file_size }} B</td>
+            <td>{{ a.uploaded_at|date:"d/m/Y H:i" }}</td>
+            <td><code class="small">{{ a.sha256_hash }}</code></td>
+            <td>
+              <a class="btn btn-sm btn-success" href="{% url 'signatures:admin_approve_artifact' a.id %}">Approve</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="alert alert-info">No pending artifacts.</div>
+  {% endif %}
+
+  <h3 class="mt-4 mb-3">Recently Approved</h3>
+  {% if approved %}
+    <ul class="list-group">
+      {% for a in approved %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <div>
+          <strong>{{ a.original_filename }}</strong>
+          <span class="text-muted small">by {{ a.owner.get_full_name|default:a.owner.username }}</span>
+        </div>
+        <span class="badge bg-success">Approved {{ a.approved_at|date:"d/m/Y H:i" }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="text-muted">No approved artifacts yet.</div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -20,6 +20,7 @@ urlpatterns = [
     path('leaves/', include('apps.leaves.urls', namespace='leaves')),
     path('notifications/', include('apps.notifications.urls', namespace='notifications')),
     path('documents/', include('apps.documents.urls', namespace='documents')),
+    path('signatures/', include('apps.signatures.urls', namespace='signatures')),
 ]
 
 # Serve media files in development

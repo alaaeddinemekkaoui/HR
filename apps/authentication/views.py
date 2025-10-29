@@ -3,6 +3,9 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import login
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from django.utils.decorators import method_decorator
 from .forms import UserRegistrationForm, AccountSettingsForm, ProfilePictureForm
 from django.contrib.auth.models import User, Group
 
@@ -139,3 +142,60 @@ class UploadProfilePictureView(LoginRequiredMixin, View):
         else:
             messages.error(request, 'Error uploading profile picture.')
             return redirect('authentication:account')
+
+
+@require_http_methods(["POST"])
+def device_login_api(request):
+    """
+    Passwordless login using a verified device.
+    Supports:
+      - USB stamp device with password (device_serial + stamp_password)
+      - Fingerprint reader (device_serial + biometric_data)
+    On success, logs the associated user in.
+    """
+    import json, hashlib
+    from apps.signatures.models import BiometricDevice
+
+    try:
+        data = json.loads(request.body)
+        device_serial = data.get('device_serial')
+        method = data.get('method')  # 'usb_stamp' or 'fingerprint'
+
+        if not device_serial or not method:
+            return JsonResponse({'success': False, 'error': 'Missing parameters'}, status=400)
+
+        device = BiometricDevice.objects.filter(
+            device_serial=device_serial,
+            is_active=True,
+            is_verified=True
+        ).select_related('user').first()
+
+        if not device:
+            return JsonResponse({'success': False, 'error': 'Device not found or not verified'}, status=404)
+
+        if device.is_locked():
+            return JsonResponse({'success': False, 'error': 'Device locked'}, status=403)
+
+        if method == 'usb_stamp' and device.device_type == 'usb_stamp_device':
+            password = data.get('stamp_password', '')
+            if not password:
+                return JsonResponse({'success': False, 'error': 'Password required'}, status=400)
+            if hashlib.sha256(password.encode()).hexdigest() != device.stamp_password_hash:
+                device.record_failed_attempt()
+                return JsonResponse({'success': False, 'error': 'Invalid password'}, status=401)
+            device.record_successful_use()
+            login(request, device.user)
+            return JsonResponse({'success': True})
+
+        if method == 'fingerprint' and device.device_type == 'fingerprint_reader':
+            biometric_data = data.get('biometric_data')
+            if not biometric_data or biometric_data != device.enrollment_data:
+                device.record_failed_attempt()
+                return JsonResponse({'success': False, 'error': 'Biometric verification failed'}, status=401)
+            device.record_successful_use()
+            login(request, device.user)
+            return JsonResponse({'success': True})
+
+        return JsonResponse({'success': False, 'error': 'Unsupported method for this device'}, status=400)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)

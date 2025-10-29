@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Upload Stamp Artifact{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white"><h5 class="mb-0">Upload Encrypted Stamp</h5></div>
+        <div class="card-body">
+          <p class="text-muted">Upload your stamp file (any format). It will be encrypted at rest. IT Admin must approve it before use.</p>
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label">Stamp file</label>
+              {{ form.file }}
+              {% if form.file.errors %}
+                <div class="text-danger small">{{ form.file.errors.0 }}</div>
+              {% endif %}
+            </div>
+            {{ form.device_id }}
+            <div class="d-flex justify-content-between">
+              <a href="{% url 'signatures:my_requests' %}" class="btn btn-secondary">Cancel</a>
+              <button type="submit" class="btn btn-primary">Upload securely</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -301,10 +301,27 @@ class OrdreMissionReviewView(UserPassesTestMixin, View):
             return redirect('employees:deployments_approval')
         
         form = OrdreMissionReviewForm()
+        # Compute decision hierarchy (M+1/M+2) for display
+        supervisors = {'m1': None, 'm2': None}
+        try:
+            employee = ordre.employee
+            from apps.employees.models.employee import Employee as Emp
+            if employee.service_id:
+                supervisors['m1'] = Emp.objects.filter(service_id=employee.service_id, position__position_type='chef_service').first()
+                supervisors['m2'] = Emp.objects.filter(division_id=employee.division_id, position__position_type='chef_division').first() if employee.division_id else Emp.objects.filter(direction_id=employee.direction_id, position__position_type='chef_direction').first()
+            elif employee.division_id:
+                supervisors['m1'] = Emp.objects.filter(division_id=employee.division_id, position__position_type='chef_division').first()
+                supervisors['m2'] = Emp.objects.filter(direction_id=employee.direction_id, position__position_type='chef_direction').first()
+            elif employee.direction_id:
+                supervisors['m1'] = Emp.objects.filter(direction_id=employee.direction_id, position__position_type='chef_direction').first()
+                supervisors['m2'] = None
+        except Exception:
+            supervisors = {'m1': None, 'm2': None}
         
         context = {
             'ordre': ordre,
             'form': form,
+            'supervisors': supervisors,
         }
         return render(request, 'employees/deployments/ordre_review.html', context)
     
@@ -335,6 +352,7 @@ class OrdreMissionReviewView(UserPassesTestMixin, View):
         context = {
             'ordre': ordre,
             'form': form,
+            'supervisors': {'m1': None, 'm2': None},
         }
         return render(request, 'employees/deployments/ordre_review.html', context)
 
