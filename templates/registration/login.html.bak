@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% block title %}Connexion{% endblock %}
+
+{% block extra_css %}
+<style>
+  .biometric-login-section {
+    border-top: 1px solid #dee2e6;
+    padding-top: 20px;
+    margin-top: 20px;
+  }
+  
+  .biometric-btn {
+    transition: all 0.3s ease;
+  }
+  
+  .biometric-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+  
+  .platform-badge {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .biometric-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .pulse-animation {
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-md-5">
+    <div class="card shadow">
+      <div class="card-body">
+        <h2 class="card-title text-center mb-4">
+          <i class="bi bi-box-arrow-in-right"></i> Connexion
+        </h2>
+        
+        <!-- Platform Detection Info -->
+        <div id="platformDetectionInfo" style="display: none;" class="alert alert-info text-center mb-3">
+          <small>
+            <i class="bi bi-info-circle"></i> 
+            <span id="platformName"></span> détecté - 
+            <span id="biometricAvailable"></span>
+          </small>
+        </div>
+        
+        {% if form.errors %}
+        <div class="alert alert-danger">
+          <p>Votre nom d'utilisateur et votre mot de passe ne correspondent pas. Veuillez réessayer.</p>
+        </div>
+        {% endif %}
+
+        {% if next %}
+          {% if user.is_authenticated %}
+          <div class="alert alert-warning">
+            Votre compte n'a pas accès à cette page. Pour continuer, veuillez vous connecter avec un compte qui a accès.
+          </div>
+          {% endif %}
+        {% endif %}
+        
+        <!-- Biometric Quick Login (Auto-detected) -->
+        <div id="biometricQuickLogin" style="display: none;" class="mb-3">
+          <div class="text-center">
+            <div class="biometric-icon pulse-animation" id="biometricIcon">
+              <i class="bi bi-fingerprint text-primary"></i>
+            </div>
+            <button id="quickBiometricBtn" class="btn btn-lg btn-primary w-100 biometric-btn">
+              <i class="bi bi-shield-check"></i> 
+              <span id="quickBiometricText">Connexion rapide avec empreinte</span>
+            </button>
+            <small class="text-muted d-block mt-2">
+              <i class="bi bi-lightning-fill text-warning"></i> Connexion en un clic
+            </small>
+          </div>
+          <div id="biometricStatus" class="mt-2"></div>
+          <div class="text-center mt-2">
+            <small>
+              <a href="#" id="showTraditionalLogin">Utiliser mot de passe</a>
+            </small>
+          </div>
+        </div>
+
+        <!-- Traditional Login Form -->
+        <form method="post" action="{% url 'login' %}" id="traditionalLoginForm">
+          {% csrf_token %}
+          
+          <div class="mb-3">
+            <label for="{{ form.username.id_for_label }}" class="form-label">Nom d'utilisateur ou Email</label>
+            <input type="text" name="username" class="form-control" id="{{ form.username.id_for_label }}" required autofocus placeholder="nom d'utilisateur ou email">
+          </div>
+          
+          <div class="mb-3">
+            <label for="{{ form.password.id_for_label }}" class="form-label">Mot de passe</label>
+            <input type="password" name="password" class="form-control" id="{{ form.password.id_for_label }}" required>
+          </div>
+
+          <input type="hidden" name="next" value="{{ next }}" />
+          
+          <div class="d-grid">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-box-arrow-in-right"></i> Se connecter
+            </button>
+          </div>
+        </form>
+
+        <!-- Biometric Login Options -->
+        <div class="biometric-login-section">
+          <div class="text-center mb-3">
+            <small class="text-muted">Ou se connecter avec</small>
+          </div>
+          
+          <div class="row g-2" id="biometricOptions">
+            <!-- Will be populated by auto-detection -->
+          </div>
+        </div>
+
+        <div class="text-center mt-3">
+          <small class="text-muted">Vous n'avez pas de compte? <a href="{% url 'authentication:register' %}">S'inscrire ici</a></small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+document.getElementById('deviceLoginBtn').addEventListener('click', async function() {
+  try {
+    // Simple prompt flow; in production, use a proper modal and WebAuthn where possible
+    const method = window.prompt('Méthode (usb_stamp ou fingerprint):', 'usb_stamp');
+    if (!method) return;
+    let device_serial = '';
+    if (method === 'usb_stamp') {
+      // If WebUSB available, try; else ask
+      if (navigator.usb) {
+        try {
+          const device = await navigator.usb.requestDevice({filters: []});
+          device_serial = device.serialNumber || '';
+        } catch(e) {}
+      }
+      if (!device_serial) device_serial = window.prompt('Saisir le numéro de série du périphérique USB:');
+      if (!device_serial) return;
+      const stamp_password = window.prompt('Mot de passe du cachet numérique:');
+      if (!stamp_password) return;
+      const res = await fetch('{% url "authentication:device_login_api" %}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+        body: JSON.stringify({ method: 'usb_stamp', device_serial, stamp_password })
+      });
+      const data = await res.json();
+      if (data.success) {
+        window.location = '{{ next|default:"/" }}';
+      } else {
+        alert('Echec: ' + (data.error || '')); 
+      }
+    } else if (method === 'fingerprint') {
+      if (!navigator.credentials || !window.PublicKeyCredential) {
+        alert('Authentification biométrique non prise en charge par ce navigateur.');
+        return;
+      }
+      // Minimal placeholder; actual WebAuthn ceremony needs server challenge
+      device_serial = window.prompt('Numéro de série du lecteur d’empreintes:');
+      if (!device_serial) return;
+      // In lieu of a real WebAuthn assertion, send a marker (DEMO ONLY)
+      const res = await fetch('{% url "authentication:device_login_api" %}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+        body: JSON.stringify({ method: 'fingerprint', device_serial, biometric_data: 'OK' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        window.location = '{{ next|default:"/" }}';
+      } else {
+        alert('Echec: ' + (data.error || ''));
+      }
+    }
+  } catch (e) {
+    alert('Erreur: ' + e.message);
+  }
+});
+</script>
+{% endblock %}

@@ -7,6 +7,7 @@ from django.utils import timezone
 from .models import BiometricDevice, ElectronicSignature, SignatureMethod, StampArtifact
 import json
 import hashlib
+import re
 
 
 @login_required
@@ -465,3 +466,120 @@ def sign_with_biometric_api(request):
             'success': False,
             'error': str(e)
         }, status=500)
+
+
+@require_http_methods(["GET", "POST"])
+@login_required
+def detect_biometric_hardware_api(request):
+    """
+    API endpoint to detect available biometric hardware based on platform.
+    Supports Windows Hello (fingerprint/face), iOS Face ID, Android fingerprint.
+    
+    Returns:
+        - available_methods: List of detected biometric methods
+        - platform: Detected platform (windows, ios, android, other)
+        - default_method: Recommended default method for the platform
+        - supports_webauthn: Whether browser supports WebAuthn API
+    """
+    try:
+        user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
+        
+        # Detect platform
+        platform = 'other'
+        if 'windows' in user_agent or 'win64' in user_agent or 'win32' in user_agent:
+            platform = 'windows'
+        elif 'iphone' in user_agent or 'ipad' in user_agent or 'ipod' in user_agent:
+            platform = 'ios'
+        elif 'android' in user_agent:
+            platform = 'android'
+        elif 'mac' in user_agent or 'macintosh' in user_agent:
+            platform = 'macos'
+        elif 'linux' in user_agent:
+            platform = 'linux'
+        
+        # Determine available methods and defaults based on platform
+        available_methods = []
+        default_method = None
+        
+        if platform == 'windows':
+            # Windows Hello supports both fingerprint and face recognition
+            available_methods = ['fingerprint', 'face', 'drawn', 'typed']
+            default_method = 'fingerprint'  # Default to fingerprint on Windows
+            
+        elif platform == 'ios':
+            # iOS supports Face ID and Touch ID (fingerprint)
+            available_methods = ['face', 'fingerprint', 'drawn', 'typed']
+            default_method = 'face'  # Default to Face ID on iOS
+            
+        elif platform == 'android':
+            # Android primarily uses fingerprint, some devices have face
+            available_methods = ['fingerprint', 'face', 'drawn', 'typed']
+            default_method = 'fingerprint'  # Default to fingerprint on Android
+            
+        elif platform == 'macos':
+            # macOS supports Touch ID on compatible devices
+            available_methods = ['fingerprint', 'drawn', 'typed']
+            default_method = 'fingerprint'
+            
+        else:
+            # Fallback for other platforms
+            available_methods = ['drawn', 'typed']
+            default_method = 'drawn'
+        
+        # Check if user has any registered biometric devices
+        registered_devices = BiometricDevice.objects.filter(
+            user=request.user,
+            is_active=True,
+            is_verified=True
+        ).values_list('device_type', flat=True)
+        
+        registered_biometric_types = []
+        for device_type in registered_devices:
+            if device_type == 'fingerprint_reader':
+                registered_biometric_types.append('fingerprint')
+            elif device_type == 'face_camera':
+                registered_biometric_types.append('face')
+            elif device_type == 'iris_scanner':
+                registered_biometric_types.append('iris')
+            elif device_type == 'usb_signature_pad':
+                registered_biometric_types.append('usb_device')
+            elif device_type == 'usb_stamp_device':
+                registered_biometric_types.append('usb_stamp')
+        
+        # Detect browser capabilities
+        supports_webauthn = False
+        chrome_match = re.search(r'chrome/(\d+)', user_agent)
+        firefox_match = re.search(r'firefox/(\d+)', user_agent)
+        safari_match = re.search(r'version/(\d+).*safari', user_agent)
+        edge_match = re.search(r'edg/(\d+)', user_agent)
+        
+        # WebAuthn support detection (rough browser version checks)
+        if chrome_match and int(chrome_match.group(1)) >= 67:
+            supports_webauthn = True
+        elif firefox_match and int(firefox_match.group(1)) >= 60:
+            supports_webauthn = True
+        elif safari_match and int(safari_match.group(1)) >= 13:
+            supports_webauthn = True
+        elif edge_match and int(edge_match.group(1)) >= 18:
+            supports_webauthn = True
+        
+        return JsonResponse({
+            'success': True,
+            'platform': platform,
+            'available_methods': available_methods,
+            'default_method': default_method,
+            'registered_biometric_types': registered_biometric_types,
+            'supports_webauthn': supports_webauthn,
+            'has_registered_devices': len(registered_biometric_types) > 0,
+            'message': f'Detected {platform} platform with {default_method} as default biometric method'
+        })
+    
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e),
+            'platform': 'unknown',
+            'available_methods': ['drawn', 'typed'],
+            'default_method': 'drawn'
+        }, status=500)
+

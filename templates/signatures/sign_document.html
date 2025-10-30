@@ -328,7 +328,120 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Canvas setup
+    // ========== BIOMETRIC AUTO-DETECTION ==========
+    // Detect and set default biometric method based on platform
+    async function detectBiometricHardware() {
+        try {
+            const response = await fetch('{% url "signatures:detect_biometric_hardware_api" %}', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Biometric detection:', data);
+
+                // Show detection info
+                const detectionInfo = document.createElement('div');
+                detectionInfo.className = 'alert alert-info mb-3';
+                detectionInfo.innerHTML = `
+                    <i class="bi bi-info-circle"></i> 
+                    <strong>Auto-detected platform:</strong> ${data.platform.toUpperCase()}
+                    <br><small>${data.message}</small>
+                `;
+                
+                // Insert detection info before signature method selection
+                const signatureMethodDiv = document.querySelector('.mb-4:has([name="signature_method"])');
+                if (signatureMethodDiv) {
+                    signatureMethodDiv.insertBefore(detectionInfo, signatureMethodDiv.firstChild);
+                }
+
+                // Auto-select default biometric method if available and user has registered devices
+                if (data.has_registered_devices && data.default_method) {
+                    // Map default_method to radio button
+                    let methodToSelect = null;
+                    
+                    if (data.default_method === 'fingerprint' && data.registered_biometric_types.includes('fingerprint')) {
+                        methodToSelect = document.getElementById('biometricMethod');
+                    } else if (data.default_method === 'face' && data.registered_biometric_types.includes('face')) {
+                        methodToSelect = document.getElementById('biometricMethod');
+                    }
+                    
+                    // If biometric is recommended and registered, pre-select it
+                    if (methodToSelect) {
+                        methodToSelect.checked = true;
+                        methodToSelect.dispatchEvent(new Event('change'));
+                        
+                        // Add badge to biometric option
+                        const biometricLabel = methodToSelect.nextElementSibling;
+                        if (biometricLabel && !biometricLabel.querySelector('.badge')) {
+                            const badge = document.createElement('span');
+                            badge.className = 'badge bg-success ms-2';
+                            badge.innerHTML = '<i class="bi bi-star-fill"></i> Recommended';
+                            biometricLabel.appendChild(badge);
+                        }
+                    }
+                }
+
+                // Show WebAuthn support status
+                if (data.supports_webauthn) {
+                    console.log('✓ WebAuthn/FIDO2 is supported by this browser');
+                } else {
+                    console.log('✗ WebAuthn/FIDO2 is not supported by this browser');
+                }
+
+                // Update biometric section with platform-specific instructions
+                updateBiometricInstructions(data.platform, data.default_method);
+
+            } else {
+                console.error('Failed to detect biometric hardware');
+            }
+        } catch (error) {
+            console.error('Error detecting biometric hardware:', error);
+        }
+    }
+
+    // Update biometric instructions based on platform
+    function updateBiometricInstructions(platform, defaultMethod) {
+        const biometricSection = document.getElementById('biometricSignatureSection');
+        if (!biometricSection) return;
+
+        const alertInfo = biometricSection.querySelector('.alert-info');
+        if (!alertInfo) return;
+
+        let instruction = '';
+        
+        switch(platform) {
+            case 'windows':
+                if (defaultMethod === 'fingerprint') {
+                    instruction = '<i class="bi bi-windows"></i> Please place your finger on the Windows Hello fingerprint sensor.';
+                } else {
+                    instruction = '<i class="bi bi-windows"></i> Please look at the camera for Windows Hello face recognition.';
+                }
+                break;
+            case 'ios':
+                instruction = '<i class="bi bi-apple"></i> Please use Face ID or Touch ID to authenticate.';
+                break;
+            case 'android':
+                instruction = '<i class="bi bi-android2"></i> Please place your finger on the fingerprint sensor.';
+                break;
+            case 'macos':
+                instruction = '<i class="bi bi-apple"></i> Please use Touch ID to authenticate.';
+                break;
+            default:
+                instruction = '<i class="bi bi-info-circle"></i> Please use your device\'s biometric authentication.';
+        }
+
+        alertInfo.innerHTML = instruction;
+    }
+
+    // Call auto-detection on page load
+    detectBiometricHardware();
+
+    // ========== CANVAS SETUP ==========
     const canvas = document.getElementById('signatureCanvas');
     const ctx = canvas.getContext('2d');
     let isDrawing = false;

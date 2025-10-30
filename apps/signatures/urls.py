@@ -39,4 +39,5 @@ urlpatterns = [
     path('api/sign-biometric/', biometric_views.sign_with_biometric_api, name='sign_biometric_api'),
     path('api/sign-usb-stamp/', biometric_views.sign_with_usb_stamp_api, name='sign_usb_stamp_api'),
     path('api/verify-stamp-password/', biometric_views.verify_usb_stamp_password_api, name='verify_stamp_password_api'),
+    path('api/detect-biometric-hardware/', biometric_views.detect_biometric_hardware_api, name='detect_biometric_hardware_api'),
 ]
